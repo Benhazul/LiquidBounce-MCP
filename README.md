@@ -1,6 +1,8 @@
 # LiquidBounce-MCP (GradleMCP)
 LiquidBounce Gradle MCP for 1.8.9 with optifine
 
+# If you find an error, open an issue or dm me on discord (my dc is "benhazul")
+
 # How to setup
 Clone the repository into whatever folder you want (Mine is in my coding folder), open the project in Intellij IDEA then make a new run configuration (Application)
 and copy everything from the image below.
