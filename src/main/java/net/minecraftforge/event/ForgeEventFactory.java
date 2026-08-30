@@ -21,6 +21,8 @@ import net.minecraftforge.fml.common.eventhandler.Event;
 import java.util.List;
 
 public class ForgeEventFactory {
+    public static final boolean LIQUIDBOUNCE_MCP_STUB = true;
+
     public static void onPlayerDestroyItem(EntityPlayer player, ItemStack stack) {
         MinecraftForge.EVENT_BUS.post(new PlayerDestroyItemEvent(player, stack));
     }

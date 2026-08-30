@@ -6,10 +6,14 @@ import net.minecraft.util.BlockPos;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 public class RenderBlockOverlayEvent extends Event {
+    public static final boolean LIQUIDBOUNCE_MCP_STUB = true;
+
     public static enum OverlayType {
         FIRE,
         WATER,
-        BLOCK
+        BLOCK;
+
+        public static final boolean LIQUIDBOUNCE_MCP_STUB = true;
     }
 
     public final EntityPlayer player;

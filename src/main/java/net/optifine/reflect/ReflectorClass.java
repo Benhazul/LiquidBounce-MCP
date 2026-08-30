@@ -1,5 +1,7 @@
 package net.optifine.reflect;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import net.optifine.Log;
 
 public class ReflectorClass implements IResolvable
@@ -34,6 +36,28 @@ public class ReflectorClass implements IResolvable
             try
             {
                 this.targetClass = Class.forName(this.targetClassName);
+
+                // MCP compatibility shims provide a handful of Forge API classes so the
+                // ported client can compile, but they are not a real Forge runtime. Letting
+                // OptiFine detect those shims enables Forge-only model/render paths (notably
+                // ModelBakery's TRSR path) and disables vanilla face culling.
+                try
+                {
+                    Field field = this.targetClass.getDeclaredField("LIQUIDBOUNCE_MCP_STUB");
+
+                    if (Modifier.isStatic(field.getModifiers()) && field.getType() == Boolean.TYPE)
+                    {
+                        field.setAccessible(true);
+
+                        if (field.getBoolean((Object)null))
+                        {
+                            this.targetClass = null;
+                        }
+                    }
+                }
+                catch (NoSuchFieldException ignored)
+                {
+                }
             }
             catch (ClassNotFoundException var2)
             {

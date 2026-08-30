@@ -1,10 +1,14 @@
 package net.minecraftforge.fml.common.eventhandler;
 
 public class Event {
+    public static final boolean LIQUIDBOUNCE_MCP_STUB = true;
+
     public static enum Result {
         DENY,
         DEFAULT,
-        ALLOW
+        ALLOW;
+
+        public static final boolean LIQUIDBOUNCE_MCP_STUB = true;
     }
 
     private Result result = Result.DEFAULT;
