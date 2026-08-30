@@ -37,6 +37,7 @@ import net.minecraft.world.biome.BiomeGenBase
 import net.minecraft.world.border.WorldBorder
 import net.minecraft.world.chunk.Chunk
 import net.minecraft.world.chunk.IChunkProvider
+import net.minecraftforge.common.ForgeModContainer
 import kotlin.math.abs
 import kotlin.math.ceil
 
@@ -1164,14 +1165,10 @@ class SimulatedPlayer(
         entity: Entity, bb: AxisAlignedBB, predicate: Predicate<in Entity?>?,
     ): List<Entity> {
         val list: List<Entity> = Lists.newArrayList()
-
-        val entityRadius = 2.0
-
-        val i = MathHelper.floor_double((bb.minX - entityRadius) / 16.0)
-        val j = MathHelper.floor_double((bb.maxX + entityRadius) / 16.0)
-        val k = MathHelper.floor_double((bb.minZ - entityRadius) / 16.0)
-        val l = MathHelper.floor_double((bb.maxZ + entityRadius) / 16.0)
-
+        val i = MathHelper.floor_double((bb.minX - World.MAX_ENTITY_RADIUS) / 16.0)
+        val j = MathHelper.floor_double((bb.maxX + World.MAX_ENTITY_RADIUS) / 16.0)
+        val k = MathHelper.floor_double((bb.minZ - World.MAX_ENTITY_RADIUS) / 16.0)
+        val l = MathHelper.floor_double((bb.maxZ + World.MAX_ENTITY_RADIUS) / 16.0)
         for (i1 in i..j) {
             for (j1 in k..l) {
                 if (isChunkLoaded(i1, j1, true)) {
@@ -1215,26 +1212,31 @@ class SimulatedPlayer(
     private fun isLivingOnLadder(block: Block?, world: World, pos: BlockPos?, entity: EntityLivingBase): Boolean {
         val isSpectator = this.isSpectator
         return if (isSpectator) {
-            return false
+            false
+        } else if (!ForgeModContainer.fullBoundingBoxLadders) {
+            block != null && block.isLadder(world, pos, entity)
         } else {
-            val bb = entity.entityBoundingBox
+            val bb = this.box
             val mX = MathHelper.floor_double(bb.minX)
             val mY = MathHelper.floor_double(bb.minY)
             val mZ = MathHelper.floor_double(bb.minZ)
-
-            for (y2 in mY until MathHelper.floor_double(bb.maxY + 1.0)) {
-                for (x2 in mX until MathHelper.floor_double(bb.maxX + 1.0)) {
-                    for (z2 in mZ until MathHelper.floor_double(bb.maxZ + 1.0)) {
+            var y2 = mY
+            while (y2.toDouble() < bb.maxY) {
+                var x2 = mX
+                while (x2.toDouble() < bb.maxX) {
+                    var z2 = mZ
+                    while (z2.toDouble() < bb.maxZ) {
                         val tmp = BlockPos(x2, y2, z2)
-                        val blockInPos = world.getBlockState(tmp).block
-
-                        if (blockInPos is BlockLadder || blockInPos is BlockVine) {
+                        if (world.getBlockState(tmp).block.isLadder(world, tmp, entity)) {
                             return true
                         }
+                        ++z2
                     }
+                    ++x2
                 }
+                ++y2
             }
-            return false
+            false
         }
     }
 

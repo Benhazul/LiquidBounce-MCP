@@ -12,8 +12,6 @@ import java.util.UUID;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.BaseAttributeMap;
@@ -52,7 +50,6 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-
 import net.ccbluex.liquidbounce.event.EventManager;
 import net.ccbluex.liquidbounce.event.EventState;
 import net.ccbluex.liquidbounce.event.JumpEvent;
@@ -68,9 +65,12 @@ import net.ccbluex.liquidbounce.utils.rotation.Rotation;
 import net.ccbluex.liquidbounce.utils.rotation.RotationSettings;
 import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
 import net.ccbluex.liquidbounce.utils.extensions.MathExtensionsKt;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 
 public abstract class EntityLivingBase extends Entity
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinEntityLivingBase.java
     private static final UUID sprintingSpeedBoostModifierUUID = UUID.fromString("662A6B8D-DA3E-4C1C-8813-96EA6097278D");
     private static final AttributeModifier sprintingSpeedBoostModifier = (new AttributeModifier(sprintingSpeedBoostModifierUUID, "Sprinting speed boost", 0.30000001192092896D, 2)).setSaved(false);
     private BaseAttributeMap attributeMap;
@@ -118,8 +118,8 @@ public abstract class EntityLivingBase extends Entity
     public double newPosX;
     public double newPosY;
     public double newPosZ;
-    public double newRotationYaw;
-    public double newRotationPitch;
+    protected double newRotationYaw;
+    protected double newRotationPitch;
     private boolean potionsNeedUpdate = true;
     private EntityLivingBase entityLivingToAttack;
     private int revengeTimer;
@@ -440,7 +440,7 @@ public abstract class EntityLivingBase extends Entity
         {
             if (itemstack != null)
             {
-                this.getAttributeMap().removeAttributeModifiers(itemstack.getAttributeModifiers());
+                this.attributeMap.removeAttributeModifiers(itemstack.getAttributeModifiers());
             }
         }
 
@@ -450,7 +450,7 @@ public abstract class EntityLivingBase extends Entity
         {
             if (itemstack1 != null)
             {
-                this.getAttributeMap().applyAttributeModifiers(itemstack1.getAttributeModifiers());
+                this.attributeMap.applyAttributeModifiers(itemstack1.getAttributeModifiers());
             }
         }
 
@@ -1151,10 +1151,7 @@ public abstract class EntityLivingBase extends Entity
 
     private int getArmSwingAnimationEnd()
     {
-        Animations module = Animations.INSTANCE;
-        int base = module.handleEvents() ? (2 + (20 - module.getSwingSpeed())) : 6;
-
-        return this.isPotionActive(Potion.digSpeed) ? base - (1 + this.getActivePotionEffect(Potion.digSpeed).getAmplifier()) * 1 : (this.isPotionActive(Potion.digSlowdown) ? base + (1 + this.getActivePotionEffect(Potion.digSlowdown).getAmplifier()) * 2 : base);
+        return this.isPotionActive(Potion.digSpeed) ? injectAnimationsModule(6) - (1 + this.getActivePotionEffect(Potion.digSpeed).getAmplifier()) * 1 : (this.isPotionActive(Potion.digSlowdown) ? injectAnimationsModule(6) + (1 + this.getActivePotionEffect(Potion.digSlowdown).getAmplifier()) * 2 : injectAnimationsModule(6));
     }
 
     public void swingItem()
@@ -1343,6 +1340,9 @@ public abstract class EntityLivingBase extends Entity
         return 0.42F;
     }
 
+    /**
+     * @author CCBlueX
+     */
     protected void jump() {
         final JumpEvent prejumpEvent = new JumpEvent(getJumpUpwardsMotion(), EventState.PRE);
         if ((Object) this == Minecraft.getMinecraft().thePlayer) {
@@ -1597,12 +1597,12 @@ public abstract class EntityLivingBase extends Entity
 
                     if (itemstack != null)
                     {
-                        this.getAttributeMap().removeAttributeModifiers(itemstack.getAttributeModifiers());
+                        this.attributeMap.removeAttributeModifiers(itemstack.getAttributeModifiers());
                     }
 
                     if (itemstack1 != null)
                     {
-                        this.getAttributeMap().applyAttributeModifiers(itemstack1.getAttributeModifiers());
+                        this.attributeMap.applyAttributeModifiers(itemstack1.getAttributeModifiers());
                     }
 
                     this.previousEquipment[j] = itemstack1 == null ? null : itemstack1.copy();
@@ -1619,10 +1619,6 @@ public abstract class EntityLivingBase extends Entity
         double d0 = this.posX - this.prevPosX;
         double d1 = this.posZ - this.prevPosZ;
         float f = (float)(d0 * d0 + d1 * d1);
-
-        Rotation rot = Rotations.INSTANCE.getRotation();
-        float yawSource = (this instanceof EntityPlayerSP && Rotations.INSTANCE.shouldUseRealisticMode() && rot != null) ? rot.getYaw() : this.rotationYaw;
-
         float f1 = this.renderYawOffset;
         float f2 = 0.0F;
         this.prevOnGroundSpeedFactor = this.onGroundSpeedFactor;
@@ -1637,7 +1633,7 @@ public abstract class EntityLivingBase extends Entity
 
         if (this.swingProgress > 0.0F)
         {
-            f1 = yawSource;
+            f1 = hookBodyRotationsA(this);
         }
 
         if (!this.onGround)
@@ -1699,11 +1695,7 @@ public abstract class EntityLivingBase extends Entity
     {
         float f = MathHelper.wrapAngleTo180_float(p_110146_1_ - this.renderYawOffset);
         this.renderYawOffset += f * 0.3F;
-
-        Rotation rot = Rotations.INSTANCE.getRotation();
-        float yawSource = (this instanceof EntityPlayerSP && Rotations.INSTANCE.shouldUseRealisticMode() && rot != null) ? rot.getYaw() : this.rotationYaw;
-
-        float f1 = MathHelper.wrapAngleTo180_float(yawSource - this.renderYawOffset);
+        float f1 = MathHelper.wrapAngleTo180_float(hookBodyRotationsB(this) - this.renderYawOffset);
         boolean flag = f1 < -90.0F || f1 >= 90.0F;
 
         if (f1 < -75.0F)
@@ -1716,7 +1708,7 @@ public abstract class EntityLivingBase extends Entity
             f1 = 75.0F;
         }
 
-        this.renderYawOffset = yawSource - f1;
+        this.renderYawOffset = hookBodyRotationsB(this) - f1;
 
         if (f1 * f1 > 2500.0F)
         {
@@ -1733,9 +1725,7 @@ public abstract class EntityLivingBase extends Entity
 
     public void onLivingUpdate()
     {
-        if (NoJumpDelay.INSTANCE.handleEvents() || Scaffold.INSTANCE.handleEvents() && Tower.INSTANCE.getTowerModeValues().equals("Pulldown")) {
-            jumpTicks = 0;
-        }
+        if (NoJumpDelay.INSTANCE.handleEvents() || Scaffold.INSTANCE.handleEvents() && Tower.INSTANCE.getTowerModeValues().equals("Pulldown")) jumpTicks = 0;
 
         if (this.jumpTicks > 0)
         {
@@ -1788,13 +1778,10 @@ public abstract class EntityLivingBase extends Entity
         else if (this.isServerWorld())
         {
             this.worldObj.theProfiler.startSection("newAi");
-            this.updateEntityActionState();
-
-            Rotation rotation = Rotations.INSTANCE.getRotation();
-            this.rotationYawHead = ((EntityLivingBase)(Object)this) instanceof EntityPlayerSP
-                    && Rotations.INSTANCE.shouldUseRealisticMode() && rotation != null
-                    ? rotation.getYaw()
-                    : this.rotationYawHead;
+            this.updateEntityActionState();        Rotation rotation = Rotations.INSTANCE.getRotation();
+        
+                //noinspection ConstantValue
+                this.rotationYawHead = ((EntityLivingBase) (Object) this) instanceof EntityPlayerSP && Rotations.INSTANCE.shouldUseRealisticMode() && rotation != null ? rotation.getYaw() : this.rotationYawHead;
 
             this.worldObj.theProfiler.endSection();
         }
@@ -1802,13 +1789,13 @@ public abstract class EntityLivingBase extends Entity
         this.worldObj.theProfiler.endSection();
         this.worldObj.theProfiler.startSection("jump");
 
+        final LiquidWalk liquidWalk = LiquidWalk.INSTANCE;
+        
+                if (liquidWalk.handleEvents() && !isJumping && !isSneaking() && isInWater() && liquidWalk.getMode().equals("Swim")) {
+                    updateAITick();
+                }
         if (this.isJumping)
         {
-            final LiquidWalk liquidWalk = LiquidWalk.INSTANCE;
-            if (liquidWalk.handleEvents() && !this.isJumping && !this.isSneaking() && this.isInWater() && liquidWalk.getMode().equals("Swim")) {
-                this.updateAITick();
-            }
-
             if (this.isInWater())
             {
                 this.updateAITick();
@@ -1954,8 +1941,9 @@ public abstract class EntityLivingBase extends Entity
 
     public Vec3 getLook(float partialTicks)
     {
-        if (((EntityLivingBase) (Object) this) instanceof EntityPlayerSP)
-        return(getVectorForRotation(rotationPitch, rotationYaw));
+        //noinspection ConstantConditions
+                if (((EntityLivingBase) (Object) this) instanceof EntityPlayerSP)
+                    return getVectorForRotation(rotationPitch, rotationYaw);
 
         if (partialTicks == 1.0F)
         {
@@ -2057,5 +2045,36 @@ public abstract class EntityLivingBase extends Entity
     protected void markPotionsDirty()
     {
         this.potionsNeedUpdate = true;
+    }
+
+
+    /**
+     * Inject body rotation modification
+     */
+    private float hookBodyRotationsA(EntityLivingBase instance) {
+        Rotation rotation = Rotations.INSTANCE.getRotation();
+
+        return instance instanceof EntityPlayerSP && Rotations.INSTANCE.shouldUseRealisticMode() && rotation != null ? rotation.getYaw() : instance.rotationYaw;
+    }
+
+
+    /**
+     * Inject body rotation modification
+     */
+    private float hookBodyRotationsB(EntityLivingBase instance) {
+        Rotation rotation = Rotations.INSTANCE.getRotation();
+
+        return instance instanceof EntityPlayerSP && Rotations.INSTANCE.shouldUseRealisticMode() && rotation != null ? rotation.getYaw() : instance.rotationYaw;
+    }
+
+
+    /**
+     * @author SuperSkidder
+     * @reason Animations swing speed
+     */
+    private int injectAnimationsModule(int constant) {
+        Animations module = Animations.INSTANCE;
+
+        return module.handleEvents() ? (2 + (20 - module.getSwingSpeed())) : constant;
     }
 }

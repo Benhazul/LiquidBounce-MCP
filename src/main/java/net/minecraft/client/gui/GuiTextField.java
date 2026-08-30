@@ -2,24 +2,24 @@ package net.minecraft.client.gui;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import net.ccbluex.liquidbounce.utils.render.RenderUtils;
-import net.ccbluex.liquidbounce.utils.render.animation.AnimationUtil;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.MathHelper;
-
+import net.ccbluex.liquidbounce.utils.render.RenderUtils;
+import net.ccbluex.liquidbounce.utils.render.animation.AnimationUtil;
 import java.awt.*;
 
 public class GuiTextField extends Gui
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiTextField.java
     private final int id;
     private final FontRenderer fontRendererInstance;
     public int xPosition;
     public int yPosition;
-    private final int width;
+    public final int width;
     public final int height;
     private String text = "";
     private int maxStringLength = 32;
@@ -457,47 +457,11 @@ public class GuiTextField extends Gui
     {
         if (this.getVisible())
         {
-            if (this.getEnableBackgroundDrawing())
+            if (injectClientDraw(this))
             {
-                float radius = 1F;
-                float borderWidth = 2.5F;
-
-                if (this.isFocused())
-                {
-                    borderWidth = 1f + (4f - 1f) * AnimationUtil.INSTANCE.breathe(1500F);
-                }
-
-                RenderUtils.INSTANCE.drawRoundedBorder(
-                        this.xPosition,
-                        this.yPosition + this.height,
-                        this.xPosition + this.width,
-                        this.yPosition + this.height,
-                        borderWidth - 0.5F,
-                        Color.BLUE.getRGB(),
-                        radius - 1F
-                );
-
-                RenderUtils.INSTANCE.drawRoundedRect(
-                        this.xPosition,
-                        this.yPosition,
-                        this.xPosition + this.width,
-                        this.yPosition + this.height - 0.5F,
-                        new Color(0, 0, 0, 100).getRGB(),
-                        radius - 1F,
-                        RenderUtils.RoundedCorners.ALL
-                );
-
-                RenderUtils.INSTANCE.drawRoundedBorderedWithoutBottom(
-                        this.xPosition,
-                        this.yPosition,
-                        this.xPosition + this.width,
-                        this.yPosition + this.height,
-                        Color.BLACK.getRGB(),
-                        borderWidth,
-                        radius
-                );
+                drawRect(this.xPosition - 1, this.yPosition - 1, this.xPosition + this.width + 1, this.yPosition + this.height + 1, -6250336);
+                drawRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + this.height, -16777216);
             }
-
 
             int i = this.isEnabled ? this.enabledColor : this.disabledColor;
             int j = this.cursorPosition - this.lineScrollOffset;
@@ -728,5 +692,24 @@ public class GuiTextField extends Gui
     public void setVisible(boolean p_146189_1_)
     {
         this.visible = p_146189_1_;
+    }
+
+
+    private boolean injectClientDraw(GuiTextField instance) {
+        if (instance.getEnableBackgroundDrawing()) {
+            float radius = 1F;
+            float width = 2.5F;
+
+            if (instance.isFocused()) {
+                // Some cool breathing effects
+                width = 1f + (4f - 1f) * AnimationUtil.INSTANCE.breathe(1500F);
+            }
+
+            RenderUtils.INSTANCE.drawRoundedBorder(this.xPosition, this.yPosition + height, this.xPosition + this.width, this.yPosition + height, width - 0.5F, Color.BLUE.getRGB(), radius - 1F);
+            RenderUtils.INSTANCE.drawRoundedRect(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + height - 0.5F, new Color(0, 0, 0, 100).getRGB(), radius - 1F, RenderUtils.RoundedCorners.ALL);
+            RenderUtils.INSTANCE.drawRoundedBorderedWithoutBottom(this.xPosition, this.yPosition, this.xPosition + this.width, this.yPosition + this.height, Color.BLACK.getRGB(), width, radius);
+        }
+
+        return false;
     }
 }

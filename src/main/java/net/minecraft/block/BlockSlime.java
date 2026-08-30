@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import net.ccbluex.liquidbounce.features.module.modules.movement.AntiBounce;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
@@ -8,9 +7,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumWorldBlockLayer;
 import net.minecraft.world.World;
+import net.ccbluex.liquidbounce.features.module.modules.movement.AntiBounce;
 
 public class BlockSlime extends BlockBreakable
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockSlime.java
     public BlockSlime()
     {
         super(Material.clay, false, MapColor.grassColor);
@@ -35,10 +36,11 @@ public class BlockSlime extends BlockBreakable
         }
     }
 
-    public void onLanded(World worldIn, Entity entityIn) {
+    public void onLanded(World worldIn, Entity entityIn)
+    {
         if (AntiBounce.INSTANCE.handleEvents()) {
-            return;
-        }
+                    return;
+                }
 
         if (entityIn.isSneaking())
         {

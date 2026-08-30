@@ -9,9 +9,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.ProphuntESP;
-import net.ccbluex.liquidbounce.utils.render.MiniMapRegister;
 import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
@@ -37,9 +34,12 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.ChunkProviderDebug;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.ccbluex.liquidbounce.features.module.modules.render.ProphuntESP;
+import net.ccbluex.liquidbounce.utils.render.MiniMapRegister;
 
 public class Chunk
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/world/MixinChunk.java
     private static final Logger logger = LogManager.getLogger();
     private final ExtendedBlockStorage[] storageArrays;
     private final byte[] blockBiomeArray;
@@ -586,13 +586,14 @@ public class Chunk
 
     public IBlockState setBlockState(BlockPos pos, IBlockState state)
     {
-        MiniMapRegister.INSTANCE.updateChunk(this);
-
-        ProphuntESP prophuntESP = ProphuntESP.INSTANCE;
-        if (prophuntESP.handleEvents())
-        {
-            prophuntESP.recordBlock(pos);
-        }
+        //noinspection ConstantConditions
+                MiniMapRegister.INSTANCE.updateChunk((Chunk) ((Object) this));
+        
+                final ProphuntESP prophuntESP = ProphuntESP.INSTANCE;
+        
+                if (prophuntESP.handleEvents()) {
+                    prophuntESP.recordBlock(pos);
+                }
 
         int i = pos.getX() & 15;
         int j = pos.getY();
@@ -908,8 +909,6 @@ public class Chunk
 
     public void onChunkLoad()
     {
-        MiniMapRegister.INSTANCE.unloadChunk(xPosition, zPosition);
-
         this.isChunkLoaded = true;
         this.worldObj.addTileEntities(this.chunkTileEntityMap.values());
 
@@ -926,6 +925,8 @@ public class Chunk
 
     public void onChunkUnload()
     {
+        MiniMapRegister.INSTANCE.unloadChunk(xPosition, zPosition);
+
         this.isChunkLoaded = false;
 
         for (TileEntity tileentity : this.chunkTileEntityMap.values())
@@ -1280,8 +1281,10 @@ public class Chunk
         {
             tileentity.updateContainingBlockInfo();
         }
-        MiniMapRegister.INSTANCE.updateChunk(this);
-    }
+    
+        //noinspection ConstantConditions
+                MiniMapRegister.INSTANCE.updateChunk((Chunk) ((Object) this));
+}
 
     public BiomeGenBase getBiome(BlockPos pos, WorldChunkManager chunkManager)
     {

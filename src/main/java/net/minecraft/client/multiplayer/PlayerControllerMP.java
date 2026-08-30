@@ -1,13 +1,5 @@
 package net.minecraft.client.multiplayer;
 
-import net.ccbluex.liquidbounce.event.AttackEvent;
-import net.ccbluex.liquidbounce.event.ClickWindowEvent;
-import net.ccbluex.liquidbounce.event.ClientSlotChangeEvent;
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.features.module.modules.exploit.AbortBreaking;
-import net.ccbluex.liquidbounce.utils.attack.CooldownHelper;
-import net.ccbluex.liquidbounce.utils.inventory.InventoryUtils;
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -18,7 +10,6 @@ import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityHorse;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -37,9 +28,19 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
+import net.ccbluex.liquidbounce.event.AttackEvent;
+import net.ccbluex.liquidbounce.event.ClickWindowEvent;
+import net.ccbluex.liquidbounce.event.ClientSlotChangeEvent;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.features.module.modules.exploit.AbortBreaking;
+import net.ccbluex.liquidbounce.utils.attack.CooldownHelper;
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
+import net.ccbluex.liquidbounce.utils.inventory.InventoryUtils;
+import net.minecraft.entity.player.InventoryPlayer;
 
 public class PlayerControllerMP
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinPlayerControllerMP.java
     private final Minecraft mc;
     private final NetHandlerPlayClient netClientHandler;
     private BlockPos currentBlock = new BlockPos(-1, -1, -1);
@@ -337,13 +338,8 @@ public class PlayerControllerMP
 
     public void syncCurrentPlayItem()
     {
-        InventoryPlayer inventory = this.mc.thePlayer.inventory;
-        SilentHotbar silentHotbar = SilentHotbar.INSTANCE;
-        int prevSlot = inventory.currentItem;
-        int serverSlot = silentHotbar.getCurrentSlot();
-        ClientSlotChangeEvent event = new ClientSlotChangeEvent(prevSlot, serverSlot);
-        EventManager.INSTANCE.call(event);
-        int i = event.getModifiedSlot();
+        int i = hookSilentHotbarA(this.mc.thePlayer.inventory);
+
         if (i != this.currentPlayerItem)
         {
             this.currentPlayerItem = i;
@@ -423,23 +419,19 @@ public class PlayerControllerMP
         else
         {
             this.syncCurrentPlayItem();
-
             this.netClientHandler.addToSendQueue(new C08PacketPlayerBlockPlacement(playerIn.inventory.getCurrentItem()));
-
-            SilentHotbar silentHotbar = SilentHotbar.INSTANCE;
-            int slot = silentHotbar.getCurrentSlot();
-
             int i = itemStackIn.stackSize;
             ItemStack itemstack = itemStackIn.useItemRightClick(worldIn, playerIn);
 
-            if (itemstack != itemStackIn || (itemstack != null && itemstack.stackSize != i))
+            if (itemstack != itemStackIn || itemstack != null && itemstack.stackSize != i)
             {
-                playerIn.inventory.mainInventory[slot] = itemstack;
+                playerIn.inventory.mainInventory[hookSilentHotbarB(playerIn.inventory)] = itemstack;
 
-                if (itemstack != null && itemstack.stackSize == 0)
+                if (itemstack.stackSize == 0)
                 {
-                    playerIn.inventory.mainInventory[slot] = null;
+                    playerIn.inventory.mainInventory[playerIn.inventory.currentItem] = null;
                 }
+
                 return true;
             }
             else
@@ -456,11 +448,9 @@ public class PlayerControllerMP
 
     public void attackEntity(EntityPlayer playerIn, Entity targetEntity)
     {
-        this.syncCurrentPlayItem();
-
         EventManager.INSTANCE.call(new AttackEvent(targetEntity));
-        CooldownHelper.INSTANCE.resetLastAttackedTicks();
-
+                CooldownHelper.INSTANCE.resetLastAttackedTicks();
+        this.syncCurrentPlayItem();
         this.netClientHandler.addToSendQueue(new C02PacketUseEntity(targetEntity, C02PacketUseEntity.Action.ATTACK));
 
         if (this.currentGameType != WorldSettings.GameType.SPECTATOR)
@@ -487,14 +477,14 @@ public class PlayerControllerMP
     public ItemStack windowClick(int windowId, int slotId, int mouseButtonClicked, int mode, EntityPlayer playerIn)
     {
         final ClickWindowEvent event = new ClickWindowEvent(windowId, slotId, mouseButtonClicked, mode);
-        EventManager.INSTANCE.call(event);
-
-        if (event.isCancelled())
-        {
-            return null;
-        }
-
-        InventoryUtils.INSTANCE.getCLICK_TIMER().reset();
+                EventManager.INSTANCE.call(event);
+        
+                if (event.isCancelled()) {
+                    return null;
+                }
+        
+                // Only reset click delay, if a click didn't get cancelled
+                InventoryUtils.INSTANCE.getCLICK_TIMER().reset();
 
         short short1 = playerIn.openContainer.getNextTransactionID(playerIn.inventory);
         ItemStack itemstack = playerIn.openContainer.slotClick(slotId, mouseButtonClicked, mode, playerIn);
@@ -567,11 +557,26 @@ public class PlayerControllerMP
 
     public boolean getIsHittingBlock()
     {
-        if (AbortBreaking.INSTANCE.handleEvents())
-        {
-            return false;
-        }
+        if (AbortBreaking.INSTANCE.handleEvents()) return false;
 
         return this.isHittingBlock;
+    }
+
+
+    private int hookSilentHotbarA(InventoryPlayer instance) {
+        SilentHotbar silentHotbar = SilentHotbar.INSTANCE;
+
+        int prevSlot = instance.currentItem;
+        int serverSlot = silentHotbar.getCurrentSlot();
+
+        ClientSlotChangeEvent event = new ClientSlotChangeEvent(prevSlot, serverSlot);
+        EventManager.INSTANCE.call(event);
+
+        return event.getModifiedSlot();
+    }
+
+
+    private int hookSilentHotbarB(InventoryPlayer instance) {
+        return SilentHotbar.INSTANCE.getCurrentSlot();
     }
 }

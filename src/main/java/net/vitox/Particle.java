@@ -1,7 +1,6 @@
 package net.vitox;
 
 import net.minecraft.client.gui.ScaledResolution;
-
 import java.util.Random;
 
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;

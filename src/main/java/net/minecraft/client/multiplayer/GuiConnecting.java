@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetHandlerLoginClient;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.network.EnumConnectionState;
@@ -19,13 +18,14 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import net.ccbluex.liquidbounce.ui.font.Fonts;
 import net.ccbluex.liquidbounce.utils.client.ServerUtils;
 import net.ccbluex.liquidbounce.utils.render.RenderUtils;
+import net.minecraft.client.gui.ScaledResolution;
 
 public class GuiConnecting extends GuiScreen
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiConnecting.java
     private static final AtomicInteger CONNECTION_ID = new AtomicInteger(0);
     private static final Logger logger = LogManager.getLogger();
     private NetworkManager networkManager;
@@ -146,24 +146,25 @@ public class GuiConnecting extends GuiScreen
         }
     }
 
-    public void drawScreen(int mouseX, int mouseY, float partialTicks)
-    {
-        ScaledResolution scaledresolution = new ScaledResolution(this.mc);
+    /**
+     * @author CCBlueX
+     */
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        ScaledResolution scaledResolution = new ScaledResolution(mc);
 
-        this.drawDefaultBackground();
+        drawDefaultBackground();
 
-        RenderUtils.INSTANCE.drawLoadingCircle((float)scaledresolution.getScaledWidth() / 2.0F, (float)scaledresolution.getScaledHeight() / 4.0F + 70.0F);
+        RenderUtils.INSTANCE.drawLoadingCircle(scaledResolution.getScaledWidth() / 2f, scaledResolution.getScaledHeight() / 4f + 70);
 
-        String s = "Unknown";
-        ServerData serverdata = this.mc.getCurrentServerData();
+        String ip = "Unknown";
 
-        if (serverdata != null)
-        {
-            s = ServerUtils.INSTANCE.hideSensitiveInformation(serverdata.serverIP);
+        final ServerData serverData = mc.getCurrentServerData();
+        if (serverData != null) {
+            ip = ServerUtils.INSTANCE.hideSensitiveInformation(serverData.serverIP);
         }
 
-        Fonts.fontSemibold40.drawCenteredString("Connecting to", (float)scaledresolution.getScaledWidth() / 2.0F, (float)scaledresolution.getScaledHeight() / 4.0F + 110.0F, 16777215, true);
-        Fonts.fontSemibold35.drawCenteredString(s, (float)scaledresolution.getScaledWidth() / 2.0F, (float)scaledresolution.getScaledHeight() / 4.0F + 120.0F, 5407227, true);
+        Fonts.fontSemibold40.drawCenteredString("Connecting to", scaledResolution.getScaledWidth() / 2f, scaledResolution.getScaledHeight() / 4f + 110, 0xFFFFFF, true);
+        Fonts.fontSemibold35.drawCenteredString(ip, scaledResolution.getScaledWidth() / 2f, scaledResolution.getScaledHeight() / 4f + 120, 0x5281FB, true);
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }

@@ -6,6 +6,7 @@ import net.minecraft.client.resources.I18n;
 
 public class GuiSlider extends GuiButton
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiSlider.java
     private float sliderPosition = 1.0F;
     public boolean isMouseDown;
     private String name;
@@ -80,8 +81,8 @@ public class GuiSlider extends GuiButton
             }
 
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-            this.drawTexturedModalRect(this.xPosition + (int)(this.sliderPosition * (float)(this.width - 8)), this.yPosition, 0, 66, 4, 20);
-            this.drawTexturedModalRect(this.xPosition + (int)(this.sliderPosition * (float)(this.width - 8)) + 4, this.yPosition, 196, 66, 4, 20);
+            cancelRectangleDrawing(this, this.xPosition + (int)(this.sliderPosition * (float)(this.width - 8)), this.yPosition, 0, 66, 4, 20);
+            cancelRectangleDrawing(this, this.xPosition + (int)(this.sliderPosition * (float)(this.width - 8)) + 4, this.yPosition, 196, 66, 4, 20);
         }
     }
 
@@ -127,5 +128,9 @@ public class GuiSlider extends GuiButton
     public interface FormatHelper
     {
         String getText(int id, String name, float value);
+    }
+
+
+    public void cancelRectangleDrawing(GuiSlider guiSlider, int x, int y, int textureX, int textureY, int width, int height) {
     }
 }

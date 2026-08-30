@@ -9,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 
 public class Gui
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGui.java
     public static final ResourceLocation optionsBackground = new ResourceLocation("textures/gui/options_background.png");
     public static final ResourceLocation statIcons = new ResourceLocation("textures/gui/container/stats_icons.png");
     public static final ResourceLocation icons = new ResourceLocation("textures/gui/icons.png");
@@ -115,10 +116,6 @@ public class Gui
 
     public void drawTexturedModalRect(int x, int y, int textureX, int textureY, int width, int height)
     {
-        if (this instanceof GuiSlider) {
-            return;
-        }
-
         float f = 0.00390625F;
         float f1 = 0.00390625F;
         Tessellator tessellator = Tessellator.getInstance();

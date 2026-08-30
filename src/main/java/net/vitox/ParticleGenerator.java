@@ -1,5 +1,4 @@
 package net.vitox;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

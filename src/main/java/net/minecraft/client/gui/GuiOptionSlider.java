@@ -7,7 +7,8 @@ import net.minecraft.util.MathHelper;
 
 public class GuiOptionSlider extends GuiButton
 {
-    float sliderValue;
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiOptionSlider.java
+    public float sliderValue;
     public boolean dragging;
     private GameSettings.Options options;
     private final float field_146132_r;
@@ -37,11 +38,9 @@ public class GuiOptionSlider extends GuiButton
 
     protected void mouseDragged(Minecraft mc, int mouseX, int mouseY)
     {
-        if (this.visible)
-        {
-            if (this.dragging)
-            {
-                this.sliderValue = (float)(mouseX - (this.xPosition + 4)) / (float)(this.width - 8);
+        if (this.visible) {
+            if (this.dragging) {
+                this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                 this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
                 float f = this.options.denormalizeValue(this.sliderValue);
                 mc.gameSettings.setOptionFloatValue(this.options, f);
@@ -50,7 +49,6 @@ public class GuiOptionSlider extends GuiButton
             }
         }
     }
-
 
     public boolean mousePressed(Minecraft mc, int mouseX, int mouseY)
     {

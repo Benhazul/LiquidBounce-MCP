@@ -8,7 +8,7 @@ import net.minecraft.network.play.INetHandlerPlayClient;
 
 public class S12PacketEntityVelocity implements Packet<INetHandlerPlayClient>
 {
-    public int entityID;
+    private int entityID;
     public int motionX;
     public int motionY;
     public int motionZ;

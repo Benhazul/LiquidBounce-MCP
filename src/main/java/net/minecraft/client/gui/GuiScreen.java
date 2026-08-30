@@ -56,6 +56,9 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import tv.twitch.chat.ChatUserInfo;
 
+import static net.minecraft.client.renderer.GlStateManager.disableFog;
+import static net.minecraft.client.renderer.GlStateManager.disableLighting;
+
 public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -166,7 +169,7 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
         {
             GlStateManager.disableRescaleNormal();
             RenderHelper.disableStandardItemLighting();
-            GlStateManager.disableLighting();
+            disableLighting();
             GlStateManager.disableDepth();
             int i = 0;
 
@@ -249,8 +252,10 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 
             this.drawHoveringText(
                     Collections.singletonList(
-                            "§c§l" + clickEvent.getAction().getCanonicalName().toUpperCase()
-                                    + ": §a" + clickEvent.getValue()
+                            "§c§l"
+                                    + clickEvent.getAction().getCanonicalName().toUpperCase()
+                                    + ": §a"
+                                    + clickEvent.getValue()
                     ),
                     x,
                     y - (hoverEvent != null ? 17 : 0)
@@ -351,7 +356,7 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
                 }
             }
 
-            GlStateManager.disableLighting();
+            disableLighting();
         }
     }
 
@@ -460,10 +465,12 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 
     public void sendChatMessage(String msg, boolean addToChat)
     {
-        if (msg.startsWith(String.valueOf(CommandManager.INSTANCE.getPrefix())) && addToChat) {
-            mc.ingameGUI.getChatGUI().addToSentMessages(msg);
+        if (msg.startsWith(String.valueOf(CommandManager.INSTANCE.getPrefix())) && addToChat)
+        {
+            this.mc.ingameGUI.getChatGUI().addToSentMessages(msg);
 
             CommandManager.INSTANCE.executeCommands(msg);
+
             return;
         }
 
@@ -506,11 +513,13 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     {
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
-        injectedActionPerformed(button);
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
+        this.injectedActionPerformed(button);
     }
 
-    protected void injectedActionPerformed(GuiButton button) {
+    protected void injectedActionPerformed(GuiButton button)
+    {
 
     }
 
@@ -615,16 +624,11 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     {
         final HUD hud = HUD.INSTANCE;
 
-        if (hud.getInventoryParticle() && this.mc.thePlayer != null)
-        {
-            final ScaledResolution scaledResolution = new ScaledResolution(this.mc);
+        if (hud.getInventoryParticle() && mc.thePlayer != null) {
+            final ScaledResolution scaledResolution = new ScaledResolution(mc);
             final int width = scaledResolution.getScaledWidth();
             final int height = scaledResolution.getScaledHeight();
-
-            ParticleUtils.INSTANCE.drawParticles(
-                    Mouse.getX() * width / this.mc.displayWidth,
-                    height - Mouse.getY() * height / this.mc.displayHeight - 1
-            );
+            ParticleUtils.INSTANCE.drawParticles(Mouse.getX() * width / mc.displayWidth, height - Mouse.getY() * height / mc.displayHeight - 1);
         }
 
         if (this.mc.theWorld != null)
@@ -639,8 +643,8 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 
     public void drawBackground(int tint)
     {
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
+        disableLighting();
+        disableFog();
 
         if (ClientConfiguration.INSTANCE.getCustomBackground())
         {
@@ -649,10 +653,11 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
             if (background == null)
             {
                 GL11.glPushMatrix();
+
                 BackgroundShader.Companion.getBACKGROUND_SHADER().startShader();
 
-                Tessellator instance = Tessellator.getInstance();
-                WorldRenderer worldRenderer = instance.getWorldRenderer();
+                final Tessellator tessellator = Tessellator.getInstance();
+                final WorldRenderer worldRenderer = tessellator.getWorldRenderer();
 
                 GL11.glEnable(GL11.GL_BLEND);
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -662,9 +667,11 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
                 worldRenderer.pos(this.width, this.height, 0).endVertex();
                 worldRenderer.pos(this.width, 0, 0).endVertex();
                 worldRenderer.pos(0, 0, 0).endVertex();
-                instance.draw();
+
+                tessellator.draw();
 
                 BackgroundShader.Companion.getBACKGROUND_SHADER().stopShader();
+
                 GL11.glDisable(GL11.GL_BLEND);
                 GL11.glPopMatrix();
             }
@@ -681,30 +688,43 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
                 );
             }
 
+            // equivalente al callbackInfo.cancel()
             return;
         }
 
+        // Vanilla
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+
         this.mc.getTextureManager().bindTexture(optionsBackground);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
         float f = 32.0F;
+
         worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-        worldrenderer.pos(0.0D, this.height, 0.0D)
-                .tex(0.0D, (float)this.height / f + tint)
-                .color(64, 64, 64, 255).endVertex();
-        worldrenderer.pos(this.width, this.height, 0.0D)
-                .tex((float)this.width / f, (float)this.height / f + tint)
-                .color(64, 64, 64, 255).endVertex();
-        worldrenderer.pos(this.width, 0.0D, 0.0D)
-                .tex((float)this.width / f, tint)
-                .color(64, 64, 64, 255).endVertex();
+        worldrenderer.pos(0.0D, (double)this.height, 0.0D)
+                .tex(0.0D, (double)((float)this.height / 32.0F + (float)tint))
+                .color(64, 64, 64, 255)
+                .endVertex();
+
+        worldrenderer.pos((double)this.width, (double)this.height, 0.0D)
+                .tex((double)((float)this.width / 32.0F), (double)((float)this.height / 32.0F + (float)tint))
+                .color(64, 64, 64, 255)
+                .endVertex();
+
+        worldrenderer.pos((double)this.width, 0.0D, 0.0D)
+                .tex((double)((float)this.width / 32.0F), (double)tint)
+                .color(64, 64, 64, 255)
+                .endVertex();
+
         worldrenderer.pos(0.0D, 0.0D, 0.0D)
-                .tex(0.0D, tint)
-                .color(64, 64, 64, 255).endVertex();
+                .tex(0.0D, (double)tint)
+                .color(64, 64, 64, 255)
+                .endVertex();
+
         tessellator.draw();
 
+        // @Inject(at = @At("RETURN"))
         if (ClientConfiguration.INSTANCE.getParticles())
         {
             ParticleUtils.INSTANCE.drawParticles(

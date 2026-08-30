@@ -1,8 +1,5 @@
 package net.minecraft.client.gui;
 
-import net.ccbluex.liquidbounce.injection.implementations.IMixinGuiSlot;
-import net.ccbluex.liquidbounce.ui.font.AWTFontRenderer;
-import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -10,23 +7,19 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.input.Mouse;
-
+import net.ccbluex.liquidbounce.injection.implementations.IMixinGuiSlot;
+import net.ccbluex.liquidbounce.ui.font.AWTFontRenderer;
+import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import java.awt.Color;
-
 import static net.minecraft.client.renderer.GlStateManager.*;
-import static net.minecraft.client.renderer.GlStateManager.disableAlpha;
-import static net.minecraft.client.renderer.GlStateManager.disableBlend;
-import static net.minecraft.client.renderer.GlStateManager.disableTexture2D;
-import static net.minecraft.client.renderer.GlStateManager.enableAlpha;
-import static net.minecraft.client.renderer.GlStateManager.enableTexture2D;
-import static net.minecraft.client.renderer.GlStateManager.shadeModel;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.GL_BLEND;
 
-public abstract class GuiSlot implements IMixinGuiSlot
-{
-    private int listWidth = 220;
+public abstract class GuiSlot implements IMixinGuiSlot {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiSlot.java
     private boolean enableScissor = false;
+
+    private int listWidth = 220;
+
     protected final Minecraft mc;
     protected int width;
     protected int height;
@@ -181,6 +174,9 @@ public abstract class GuiSlot implements IMixinGuiSlot
         }
     }
 
+    /**
+     * @author CCBlueX
+     */
     public void drawScreen(int mouseXIn, int mouseYIn, float p_148128_3_) {
         if (field_178041_q) {
             AWTFontRenderer.Companion.setAssumeNonVolatile(true);
@@ -212,6 +208,7 @@ public abstract class GuiSlot implements IMixinGuiSlot
             disableDepth();
             int i1 = 4;
 
+            // ClientCode
             ScaledResolution scaledResolution = new ScaledResolution(mc);
             Gui.drawRect(0, 0, scaledResolution.getScaledWidth(), top, Integer.MIN_VALUE);
             Gui.drawRect(0, bottom, scaledResolution.getScaledWidth(), height, Integer.MIN_VALUE);
@@ -398,19 +395,16 @@ public abstract class GuiSlot implements IMixinGuiSlot
         return this.enabled;
     }
 
+    /**
+     * @author CCBlueX (superblaubeere27)
+     */
     public int getListWidth() {
         return listWidth;
-    }
-
-    @Override
-    public void setListWidth(int listWidth) {
-        this.listWidth = listWidth;
     }
 
     protected void drawSelectionBox(int p_148120_1_, int p_148120_2_, int mouseXIn, int mouseYIn)
     {
         int i = this.getSize();
-        Tessellator tessellator = Tessellator.getInstance();
 
         for (int j = 0; j < i; ++j)
         {
@@ -426,44 +420,19 @@ public abstract class GuiSlot implements IMixinGuiSlot
             {
                 int i1 = this.left + (this.width / 2 - this.getListWidth() / 2);
                 int j1 = this.left + this.width / 2 + this.getListWidth() / 2;
-
-                RenderUtils.INSTANCE.drawRoundedRect(
-                        i1 + 2,
-                        k,
-                        j1 - 1,
-                        k + l + 1,
-                        new Color(0, 0, 0, 100).getRGB(),
-                        2F,
-                        RenderUtils.RoundedCorners.TOP_ONLY
-                );
-
-                RenderUtils.INSTANCE.drawGradientRect(
-                        i1 + 2,
-                        k + l,
-                        j1 - 1,
-                        k + l + 1.5f,
-                        Color.CYAN.getRGB(),
-                        Color.BLUE.getRGB(),
-                        0f
-                );
+                RenderUtils.INSTANCE.drawRoundedRect(i1 + 2, k, j1 - 1, k + l + 1, new Color(0, 0, 0, 100).getRGB(), 2F, RenderUtils.RoundedCorners.TOP_ONLY);
+                RenderUtils.INSTANCE.drawGradientRect(i1 + 2, k + l, j1 - 1, k + l + 1.5F, Color.CYAN.getRGB(), Color.BLUE.getRGB(), 0F);
             }
 
             this.drawSlot(j, p_148120_1_, k, l, mouseXIn, mouseYIn);
         }
     }
 
+    /**
+     * @author CCBlueX
+     */
     protected int getScrollBarX() {
         return width - 5;
-    }
-
-    @Override
-    public void setEnableScissor(boolean enableScissor) {
-        this.enableScissor = enableScissor;
-    }
-
-    @Override
-    public boolean getEnableScissor() {
-        return enableScissor;
     }
 
     protected void overlayBackground(int startY, int endY, int startAlpha, int endAlpha)
@@ -504,5 +473,23 @@ public abstract class GuiSlot implements IMixinGuiSlot
         worldrenderer.pos((double)this.right, (double)this.top, 0.0D).tex((double)((float)this.right / f), (double)((float)(this.top + (int)this.amountScrolled) / f)).color(32, 32, 32, 255).endVertex();
         worldrenderer.pos((double)this.left, (double)this.top, 0.0D).tex((double)((float)this.left / f), (double)((float)(this.top + (int)this.amountScrolled) / f)).color(32, 32, 32, 255).endVertex();
         p_drawContainerBackground_1_.draw();
+    }
+
+
+    @Override
+    public void setEnableScissor(boolean enableScissor) {
+        this.enableScissor = enableScissor;
+    }
+
+
+    @Override
+    public boolean getEnableScissor() {
+        return enableScissor;
+    }
+
+
+    @Override
+    public void setListWidth(int listWidth) {
+        this.listWidth = listWidth;
     }
 }

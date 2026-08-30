@@ -63,7 +63,8 @@ public class GuiAchievements extends GuiScreen implements IProgressMeter
         this.buttonList.add(new GuiOptionButton(1, this.width / 2 + 24, this.height / 2 + 74, 80, 20, I18n.format("gui.done", new Object[0])));
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         if (!this.loadingAchievements)
         {
             if (button.id == 1)

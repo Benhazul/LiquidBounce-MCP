@@ -4,13 +4,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.List;
-
-import net.ccbluex.liquidbounce.features.special.BungeeCordSpoof;
-import net.ccbluex.liquidbounce.file.FileManager;
-import net.ccbluex.liquidbounce.lang.LanguageKt;
-import net.ccbluex.liquidbounce.ui.client.GuiClientFixes;
-import net.ccbluex.liquidbounce.ui.client.altmanager.GuiAltManager;
-import net.ccbluex.liquidbounce.ui.client.tools.GuiTools;
 import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
@@ -20,9 +13,19 @@ import net.minecraft.client.resources.I18n;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
+import kotlin.collections.CollectionsKt;
+import net.ccbluex.liquidbounce.features.special.BungeeCordSpoof;
+import net.ccbluex.liquidbounce.file.FileManager;
+import net.ccbluex.liquidbounce.lang.LanguageKt;
+import net.ccbluex.liquidbounce.ui.client.GuiClientFixes;
+import net.ccbluex.liquidbounce.ui.client.altmanager.GuiAltManager;
+import net.ccbluex.liquidbounce.ui.client.tools.GuiTools;
 
 public class GuiMultiplayer extends GuiScreen implements GuiYesNoCallback
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiMultiplayer.java
+    private GuiButton bungeeCordSpoofButton;
+
     private static final Logger logger = LogManager.getLogger();
     private final OldServerPinger oldServerPinger = new OldServerPinger();
     private GuiScreen parentScreen;
@@ -40,7 +43,6 @@ public class GuiMultiplayer extends GuiScreen implements GuiYesNoCallback
     private LanServerDetector.LanServerList lanServerList;
     private LanServerDetector.ThreadLanServerFind lanServerDetector;
     private boolean initialized;
-    private GuiButton bungeeCordSpoofButton;
 
     public GuiMultiplayer(GuiScreen parentScreen)
     {
@@ -78,16 +80,23 @@ public class GuiMultiplayer extends GuiScreen implements GuiYesNoCallback
         }
 
         this.createButtons();
-
-        int increase = 0;
-        int yPosition = 8;
-
-        buttonList.add(new GuiButton(997, 5 + increase, yPosition, 45, 20, "Fixes"));
-        buttonList.add(bungeeCordSpoofButton = new GuiButton(998, 55 + increase, yPosition, 98, 20, "BungeeCord Spoof: " + (BungeeCordSpoof.INSTANCE.getEnabled() ? "On" : "Off")));
-        buttonList.add(new GuiButton(996, width - 120, yPosition, 62, 20, LanguageKt.translationMenu("altManager")));
-        buttonList.add(new GuiButton(999, width - 52, yPosition, 46, 20, "Tools"));
-
-    }
+    
+        // Detect ViaForge button
+                GuiButton button = CollectionsKt.firstOrNull(buttonList, b -> b.displayString.equals("ViaForge"));
+        
+                int increase = 0;
+                int yPosition = 8;
+        
+                if (button != null) {
+                    increase += 105;
+                    yPosition = Math.min(button.yPosition, 10);
+                }
+        
+                buttonList.add(new GuiButton(997, 5 + increase, yPosition, 45, 20, "Fixes"));
+                buttonList.add(bungeeCordSpoofButton = new GuiButton(998, 55 + increase, yPosition, 98, 20, "BungeeCord Spoof: " + (BungeeCordSpoof.INSTANCE.getEnabled() ? "On" : "Off")));
+                buttonList.add(new GuiButton(996, width - 120, yPosition, 62, 20, LanguageKt.translationMenu("altManager")));
+                buttonList.add(new GuiButton(999, width - 52, yPosition, 46, 20, "Tools"));
+}
 
     public void handleMouseInput() throws IOException
     {
@@ -134,8 +143,25 @@ public class GuiMultiplayer extends GuiScreen implements GuiYesNoCallback
         this.oldServerPinger.clearPendingNetworks();
     }
 
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
+        switch (button.id) {
+                    case 996:
+                        mc.displayGuiScreen(new GuiAltManager((GuiScreen) (Object) this));
+                        break;
+                    case 997:
+                        mc.displayGuiScreen(new GuiClientFixes((GuiScreen) (Object) this));
+                        break;
+                    case 998:
+                        BungeeCordSpoof.INSTANCE.setEnabled(!BungeeCordSpoof.INSTANCE.getEnabled());
+                        bungeeCordSpoofButton.displayString = "BungeeCord Spoof: " + (BungeeCordSpoof.INSTANCE.getEnabled() ? "On" : "Off");
+                        FileManager.INSTANCE.getValuesConfig().saveConfig();
+                        break;
+                    case 999:
+                        mc.displayGuiScreen(new GuiTools((GuiScreen) (Object) this));
+                        break;
+                }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
         if (button.enabled)
         {
             GuiListExtended.IGuiListEntry guilistextended$iguilistentry = this.serverListSelector.func_148193_k() < 0 ? null : this.serverListSelector.getListEntry(this.serverListSelector.func_148193_k());
@@ -184,24 +210,6 @@ public class GuiMultiplayer extends GuiScreen implements GuiYesNoCallback
             else if (button.id == 8)
             {
                 this.refreshServerList();
-            }
-            else if (button.id == 996)
-            {
-                mc.displayGuiScreen(new GuiAltManager((GuiScreen) (Object) this));
-            }
-            else if (button.id == 997)
-            {
-                mc.displayGuiScreen(new GuiClientFixes((GuiScreen) (Object) this));
-            }
-            else if (button.id == 998)
-            {
-                BungeeCordSpoof.INSTANCE.setEnabled(!BungeeCordSpoof.INSTANCE.getEnabled());
-                bungeeCordSpoofButton.displayString = "BungeeCord Spoof: " + (BungeeCordSpoof.INSTANCE.getEnabled() ? "On" : "Off");
-                FileManager.INSTANCE.getValuesConfig().saveConfig();
-            }
-            else if (button.id == 999)
-            {
-                mc.displayGuiScreen(new GuiTools((GuiScreen) (Object) this));
             }
         }
     }

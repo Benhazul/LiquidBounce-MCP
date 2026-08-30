@@ -7,13 +7,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.Map.Entry;
-
-import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
-import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
-import net.ccbluex.liquidbounce.injection.implementations.IMixinItemStack;
-import net.ccbluex.liquidbounce.utils.client.ClassUtils;
 import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentDurability;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -38,8 +32,16 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
+import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
+import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
+import net.ccbluex.liquidbounce.injection.implementations.IMixinItemStack;
+import net.ccbluex.liquidbounce.utils.client.ClassUtils;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public final class ItemStack implements IMixinItemStack {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/item/MixinMixinItemStack.java
+    private long itemDelay;
+
     public static final DecimalFormat DECIMALFORMAT = new DecimalFormat("#.###");
     public int stackSize;
     public int animationsToGo;
@@ -51,7 +53,6 @@ public final class ItemStack implements IMixinItemStack {
     private boolean canDestroyCacheResult;
     private Block canPlaceOnCacheBlock;
     private boolean canPlaceOnCacheResult;
-    private long itemDelay;
 
     public ItemStack(Block blockIn)
     {
@@ -92,12 +93,8 @@ public final class ItemStack implements IMixinItemStack {
         {
             this.itemDamage = 0;
         }
-        itemDelay = System.currentTimeMillis();
-    }
 
-    @Override
-    public long getItemDelay() {
-        return itemDelay;
+        this.itemDelay = System.currentTimeMillis();
     }
 
     public static ItemStack loadItemStackFromNBT(NBTTagCompound nbt)
@@ -432,37 +429,22 @@ public final class ItemStack implements IMixinItemStack {
 
     public EnumAction getItemUseAction()
     {
-        EnumAction action = this.getItem().getItemUseAction(this);
-
-        final KillAura killAura = KillAura.INSTANCE;
-        final NoSlow noSlow = NoSlow.INSTANCE;
-
-        if ((Object)this == Minecraft.getMinecraft().getItemRenderer().itemToRender)
         {
-            boolean isForceBlocking =
-                    (
-                            item instanceof ItemSword &&
-                                    !killAura.getAutoBlock().equals("Off") &&
-                                    (
-                                            killAura.getRenderBlocking() ||
-                                                    (
-                                                            killAura.getTarget() != null &&
-                                                                    (killAura.getBlinkAutoBlock() || killAura.getForceBlockRender())
-                                                    )
-                                    )
-                                    || noSlow.isUNCPBlocking()
-                    )
-                            && ClassUtils.INSTANCE.hasClass("com.orangemarshall.animations.BlockhitAnimation");
-
-            if (isForceBlocking)
-            {
-                return EnumAction.BLOCK;
-            }
+        final KillAura killAura = KillAura.INSTANCE;
+                final NoSlow noSlow = NoSlow.INSTANCE;
+        
+                if ((Object) this == mc.getItemRenderer().itemToRender) {
+                    boolean isForceBlocking = (item instanceof ItemSword && !killAura.getAutoBlock().equals("Off") &&
+                            (killAura.getRenderBlocking() || killAura.getTarget() != null && (killAura.getBlinkAutoBlock() || killAura.getForceBlockRender()))
+                            || noSlow.isUNCPBlocking()) && ClassUtils.INSTANCE.hasClass("com.orangemarshall.animations.BlockhitAnimation");
+        
+                    if (isForceBlocking) {
+                        return EnumAction.BLOCK;
+                    }
+                }
+        return this.getItem().getItemUseAction(this);
         }
-
-        return action;
     }
-
 
     public void onPlayerStoppedUsing(World worldIn, EntityPlayer playerIn, int timeLeft)
     {
@@ -981,5 +963,10 @@ public final class ItemStack implements IMixinItemStack {
             this.canPlaceOnCacheResult = false;
             return false;
         }
+    }
+
+    @Override
+    public long getItemDelay() {
+        return itemDelay;
     }
 }

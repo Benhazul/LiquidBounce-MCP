@@ -1,11 +1,11 @@
 package net.minecraftforge.client.model;
 
-import javax.vecmath.Matrix4fLOL;
+import javax.vecmath.Matrix4f;
 import net.minecraft.util.EnumFacing;
 
 public interface ITransformation
 {
-    Matrix4fLOL getMatrix();
+    Matrix4f getMatrix();
 
     EnumFacing rotate(EnumFacing var1);
 

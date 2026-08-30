@@ -3,12 +3,13 @@ package net.minecraft.client.renderer.tileentity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.EntityPainting;
 import net.minecraft.tileentity.MobSpawnerBaseLogic;
 import net.minecraft.tileentity.TileEntityMobSpawner;
+import net.minecraft.entity.item.EntityPainting;
 
 public class TileEntityMobSpawnerRenderer extends TileEntitySpecialRenderer<TileEntityMobSpawner>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinTileEntityMobSpawnerRenderer.java
     public void renderTileEntityAt(TileEntityMobSpawner te, double x, double y, double z, float partialTicks, int destroyStage)
     {
         GlStateManager.pushMatrix();
@@ -17,11 +18,14 @@ public class TileEntityMobSpawnerRenderer extends TileEntitySpecialRenderer<Tile
         GlStateManager.popMatrix();
     }
 
-    public static void renderMob(MobSpawnerBaseLogic mobSpawnerLogic, double posX, double posY, double posZ, float partialTicks) {
-        Entity entity = mobSpawnerLogic.func_180612_a(mobSpawnerLogic.getSpawnerWorld());
+    public static void renderMob(MobSpawnerBaseLogic mobSpawnerLogic, double posX, double posY, double posZ, float partialTicks)
+    {
+        Entity entity0 = mobSpawnerLogic.func_180612_a(mobSpawnerLogic.getSpawnerWorld());
+        
+                if (entity0 == null || entity0 instanceof EntityPainting)
+                    return;
 
-        if (entity == null || entity instanceof EntityPainting)
-            return;
+        Entity entity = mobSpawnerLogic.func_180612_a(mobSpawnerLogic.getSpawnerWorld());
 
         if (entity != null)
         {

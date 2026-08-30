@@ -2,8 +2,6 @@ package net.minecraft.client.renderer;
 
 import java.util.BitSet;
 import java.util.List;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -29,9 +27,11 @@ import net.optifine.reflect.Reflector;
 import net.optifine.render.RenderEnv;
 import net.optifine.shaders.SVertexBuilder;
 import net.optifine.shaders.Shaders;
+import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 
 public class BlockModelRenderer
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockModelRenderer.java
     private static float aoLightValueOpaque = 0.2F;
     private static boolean separateAoLightValue = false;
     private static final EnumWorldBlockLayer[] OVERLAY_LAYERS = new EnumWorldBlockLayer[] {EnumWorldBlockLayer.CUTOUT, EnumWorldBlockLayer.CUTOUT_MIPPED, EnumWorldBlockLayer.TRANSLUCENT};
@@ -91,10 +91,10 @@ public class BlockModelRenderer
     public boolean renderModelAmbientOcclusion(IBlockAccess blockAccessIn, IBakedModel modelIn, Block blockIn, BlockPos blockPosIn, WorldRenderer worldRendererIn, boolean checkSides)
     {
         final XRay xray = XRay.INSTANCE;
-
-        if (xray.handleEvents()) {
-            return xray.getXrayBlocks().contains(blockIn);
-        }
+        
+                if (xray.handleEvents()) {
+                    return xray.getXrayBlocks().contains(blockIn);
+                }
 
         IBlockState iblockstate = blockAccessIn.getBlockState(blockPosIn);
         return this.renderModelSmooth(blockAccessIn, modelIn, iblockstate, blockPosIn, worldRendererIn, checkSides);
@@ -139,10 +139,10 @@ public class BlockModelRenderer
     public boolean renderModelStandard(IBlockAccess blockAccessIn, IBakedModel modelIn, Block blockIn, BlockPos blockPosIn, WorldRenderer worldRendererIn, boolean checkSides)
     {
         final XRay xray = XRay.INSTANCE;
-
-        if (xray.handleEvents()) {
-            return xray.getXrayBlocks().contains(blockIn);
-        }
+        
+                if (xray.handleEvents()) {
+                    return xray.getXrayBlocks().contains(blockIn);
+                }
 
         IBlockState iblockstate = blockAccessIn.getBlockState(blockPosIn);
         return this.renderModelFlat(blockAccessIn, modelIn, iblockstate, blockPosIn, worldRendererIn, checkSides);

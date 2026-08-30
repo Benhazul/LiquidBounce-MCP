@@ -11,11 +11,11 @@ import net.minecraft.util.Vec3;
 
 public class S27PacketExplosion implements Packet<INetHandlerPlayClient>
 {
-    public double posX;
-    public double posY;
-    public double posZ;
-    public float strength;
-    public List<BlockPos> affectedBlockPositions;
+    private double posX;
+    private double posY;
+    private double posZ;
+    private float strength;
+    private List<BlockPos> affectedBlockPositions;
     public float field_149152_f;
     public float field_149153_g;
     public float field_149159_h;

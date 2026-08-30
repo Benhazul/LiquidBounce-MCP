@@ -3,9 +3,6 @@ package net.minecraft.client.renderer.entity;
 import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.Map;
-
-import net.ccbluex.liquidbounce.features.module.modules.combat.HitBox;
-import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.state.IBlockState;
@@ -108,9 +105,12 @@ import net.optifine.entity.model.CustomEntityModels;
 import net.optifine.player.PlayerItemsLayer;
 import net.optifine.reflect.Reflector;
 import net.optifine.shaders.Shaders;
+import net.ccbluex.liquidbounce.features.module.modules.combat.HitBox;
+import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
 
 public class RenderManager
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRenderManager.java
     private Map<Class, Render> entityRenderMap = Maps.newHashMap();
     private Map<String, RenderPlayer> skinMap = Maps.<String, RenderPlayer>newHashMap();
     private RenderPlayer playerRenderer;
@@ -319,8 +319,10 @@ public class RenderManager
         return render != null && render.shouldRender(entityIn, camera, camX, camY, camZ);
     }
 
-    public boolean renderEntityStatic(Entity entity, float partialTicks, boolean hideDebugBox) {
+    public boolean renderEntityStatic(Entity entity, float partialTicks, boolean hideDebugBox)
+    {
         FreeCam.INSTANCE.restoreOriginalPosition();
+
         if (entity.ticksExisted == 0)
         {
             entity.lastTickPosX = entity.posX;
@@ -342,20 +344,10 @@ public class RenderManager
         int j = i % 65536;
         int k = i / 65536;
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, (float)j / 1.0F, (float)k / 1.0F);
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        boolean idklol = this.doRenderEntity(
-                entity,
-                d0 - this.renderPosX,
-                d1 - this.renderPosY,
-                d2 - this.renderPosZ,
-                f,
-                partialTicks,
-                hideDebugBox
-        );
-
+        boolean result = this.doRenderEntity(entity, d0 - this.renderPosX, d1 - this.renderPosY, d2 - this.renderPosZ, f, partialTicks, hideDebugBox);
         FreeCam.INSTANCE.useModifiedPosition();
-
-        return idklol;  }
+        return result;
+    }
 
     public void renderWitherSkull(Entity entityIn, float partialTicks)
     {
@@ -464,14 +456,7 @@ public class RenderManager
             GlStateManager.disableCull();
             GlStateManager.disableBlend();
             float f = entityIn.width / 2.0F;
-            HitBox hitBox = HitBox.INSTANCE;
-            AxisAlignedBB axisalignedbb;
-            if (!hitBox.handleEvents()) {
-                axisalignedbb = entityIn.getEntityBoundingBox();
-            } else {
-                float size = hitBox.determineSize(entityIn);
-                axisalignedbb = entityIn.getEntityBoundingBox().expand(size, size, size);
-            }
+            AxisAlignedBB axisalignedbb = getEntityBoundingBox(entityIn);
             AxisAlignedBB axisalignedbb1 = new AxisAlignedBB(axisalignedbb.minX - entityIn.posX + x, axisalignedbb.minY - entityIn.posY + y, axisalignedbb.minZ - entityIn.posZ + z, axisalignedbb.maxX - entityIn.posX + x, axisalignedbb.maxY - entityIn.posY + y, axisalignedbb.maxZ - entityIn.posZ + z);
             RenderGlobal.drawOutlinedBoundingBox(axisalignedbb1, 255, 255, 255, 255);
 
@@ -532,5 +517,17 @@ public class RenderManager
     public Map<String, RenderPlayer> getSkinMap()
     {
         return Collections.<String, RenderPlayer>unmodifiableMap(this.skinMap);
+    }
+
+
+    private AxisAlignedBB getEntityBoundingBox(Entity entity) {
+        final HitBox hitBox = HitBox.INSTANCE;
+
+        if (!hitBox.handleEvents()) {
+            return entity.getEntityBoundingBox();
+        }
+
+        float size = hitBox.determineSize(entity);
+        return entity.getEntityBoundingBox().expand(size, size, size);
     }
 }

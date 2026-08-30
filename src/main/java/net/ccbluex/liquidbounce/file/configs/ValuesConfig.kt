@@ -108,7 +108,10 @@ class ValuesConfig(file: File) : FileConfig(file) {
 
     /**
      * Save config to file
+     *
+     * @throws IOException
      */
+    @Throws(IOException::class)
     override fun saveConfig() {
         val jsonObject = JsonObject()
         jsonObject.run {

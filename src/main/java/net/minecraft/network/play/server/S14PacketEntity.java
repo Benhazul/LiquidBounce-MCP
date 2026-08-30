@@ -10,13 +10,13 @@ import net.minecraft.world.World;
 public class S14PacketEntity implements Packet<INetHandlerPlayClient>
 {
     public int entityId;
-    public byte posX;
-    public byte posY;
-    public byte posZ;
-    public byte yaw;
-    public byte pitch;
-    public boolean onGround;
-    public boolean field_149069_g;
+    protected byte posX;
+    protected byte posY;
+    protected byte posZ;
+    protected byte yaw;
+    protected byte pitch;
+    protected boolean onGround;
+    protected boolean field_149069_g;
 
     public S14PacketEntity()
     {

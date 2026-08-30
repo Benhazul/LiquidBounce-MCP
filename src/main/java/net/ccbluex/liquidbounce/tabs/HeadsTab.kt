@@ -26,7 +26,7 @@ class HeadsTab : CreativeTabs(getNextTabId(),"Heads") {
                 if (CreativeTabs.creativeTabArray[i] == null)
                     return i
             }
-            throw IllegalStateException("No free CreativeTabs slots")
+            return CreativeTabs.getNextID()
         }
     }
 

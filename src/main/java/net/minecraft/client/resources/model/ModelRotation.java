@@ -13,8 +13,6 @@ import net.optifine.reflect.Reflector;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
-import javax.vecmath.Matrix4fLOL;
-
 public enum ModelRotation implements IModelState, ITransformation
 {
     X0_Y0(0, 0),
@@ -119,9 +117,9 @@ public enum ModelRotation implements IModelState, ITransformation
         return (Optional)Reflector.call(Reflector.ForgeHooksClient_applyTransform, new Object[] {this.getMatrix(), p_apply_1_});
     }
 
-    public Matrix4fLOL getMatrix()
+    public javax.vecmath.Matrix4f getMatrix()
     {
-        return Reflector.ForgeHooksClient_getMatrix.exists() ? (Matrix4fLOL)Reflector.call(Reflector.ForgeHooksClient_getMatrix, new Object[] {this}): new Matrix4fLOL(this.getMatrix4d());
+        return Reflector.ForgeHooksClient_getMatrix.exists() ? (javax.vecmath.Matrix4f)Reflector.call(Reflector.ForgeHooksClient_getMatrix, new Object[] {this}): new javax.vecmath.Matrix4f(this.getMatrix4d());
     }
 
     public EnumFacing rotate(EnumFacing p_rotate_1_)

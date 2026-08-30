@@ -1,16 +1,8 @@
 package net.minecraft.client.renderer.entity;
 
-import co.uk.hexeption.utils.OutlineUtils;
 import com.google.common.collect.Lists;
-
-import java.awt.Color;
 import java.nio.FloatBuffer;
 import java.util.List;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.*;
-import net.ccbluex.liquidbounce.utils.attack.EntityUtils;
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
-import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.FontRenderer;
@@ -39,13 +31,19 @@ import net.optifine.shaders.Shaders;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
-
+import co.uk.hexeption.utils.OutlineUtils;
+import net.ccbluex.liquidbounce.features.module.modules.render.*;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
+import net.ccbluex.liquidbounce.utils.attack.EntityUtils;
+import net.ccbluex.liquidbounce.utils.render.RenderUtils;
+import java.awt.Color;
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 import static net.minecraft.client.renderer.GlStateManager.*;
 import static org.lwjgl.opengl.GL11.*;
 
 public abstract class RendererLivingEntity<T extends EntityLivingBase> extends Render<T>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRendererLivingEntity.java
     private static final Logger logger = LogManager.getLogger();
     private static final DynamicTexture textureBrightness = new DynamicTexture(16, 16);
     public ModelBase mainModel;
@@ -115,22 +113,13 @@ public abstract class RendererLivingEntity<T extends EntityLivingBase> extends R
         FreeLook.INSTANCE.restoreOriginalRotation();
 
         final Chams chams = Chams.INSTANCE;
-        final ESP esp = ESP.INSTANCE;
-
-        boolean shouldRender =
-                (chams.handleEvents()
-                        && chams.getTargets()
-                        && EntityUtils.INSTANCE.isSelected(entity, false))
-                        ||
-                        (esp.handleEvents()
-                                && esp.shouldRender(entity)
-                                && "Gaussian".equals(esp.getMode()));
-
-        if (shouldRender)
-        {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1f, -1000000F);
-        }
+                final ESP esp = ESP.INSTANCE;
+                boolean shouldRender = chams.handleEvents() && chams.getTargets() && EntityUtils.INSTANCE.isSelected(entity, false) || esp.handleEvents() && esp.shouldRender(entity) && esp.getMode().equals("Gaussian");
+        
+                if (shouldRender) {
+                    glEnable(GL_POLYGON_OFFSET_FILL);
+                    glPolygonOffset(1f, -1000000F);
+                }
 
         if (!Reflector.RenderLivingEvent_Pre_Constructor.exists() || !Reflector.postForgeBusEvent(Reflector.RenderLivingEvent_Pre_Constructor, new Object[] {entity, this, Double.valueOf(x), Double.valueOf(y), Double.valueOf(z)}))
         {
@@ -309,26 +298,18 @@ public abstract class RendererLivingEntity<T extends EntityLivingBase> extends R
                 Reflector.postForgeBusEvent(Reflector.RenderLivingEvent_Post_Constructor, new Object[] {entity, this, Double.valueOf(x), Double.valueOf(y), Double.valueOf(z)});
             }
         }
-        final Chams chamsPost = Chams.INSTANCE;
-        final ESP espPost = ESP.INSTANCE;
-
-        boolean shouldRenderPost =
-                (chamsPost.handleEvents()
-                        && chamsPost.getTargets()
-                        && EntityUtils.INSTANCE.isSelected(entity, false))
-                        ||
-                        (espPost.handleEvents()
-                                && espPost.shouldRender(entity)
-                                && "Gaussian".equals(espPost.getMode()));
-
-        if (shouldRenderPost)
-        {
-            glPolygonOffset(1f, 1000000F);
-            glDisable(GL_POLYGON_OFFSET_FILL);
-        }
+    
+        final Chams chams0 = Chams.INSTANCE;
+                final ESP esp0 = ESP.INSTANCE;
+                boolean shouldRender0 = chams0.handleEvents() && chams0.getTargets() && EntityUtils.INSTANCE.isSelected(entity, false) || esp0.handleEvents() && esp0.shouldRender(entity) && esp0.getMode().equals("Gaussian");
+        
+                if (shouldRender0) {
+                    glPolygonOffset(1f, 1000000F);
+                    glDisable(GL_POLYGON_OFFSET_FILL);
+                }
 
         FreeLook.INSTANCE.useModifiedRotation();
-    }
+}
 
     protected boolean setScoreTeamColor(T entityLivingBaseIn)
     {
@@ -372,141 +353,97 @@ public abstract class RendererLivingEntity<T extends EntityLivingBase> extends R
         GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
     }
 
-    protected void renderModel(
-            T entity,
-            float limbSwing,
-            float limbSwingAmount,
-            float ageInTicks,
-            float netHeadYaw,
-            float headPitch,
-            float scaleFactor
-    ) {
-        boolean visible = !entity.isInvisible();
-
-        final TrueSight trueSight = TrueSight.INSTANCE;
-        boolean semiVisible = !visible && (
-                !entity.isInvisibleToPlayer(Minecraft.getMinecraft().thePlayer)
-                        || (trueSight.handleEvents() && trueSight.getEntities())
-        );
-
-        if (visible || semiVisible) {
-            final ESP esp = ESP.INSTANCE;
-
-            boolean shouldRenderGaussianESP =
-                    esp.handleEvents()
-                            && esp.shouldRender(entity)
-                            && "Gaussian".equalsIgnoreCase(esp.getMode());
-
-            if (!shouldRenderGaussianESP) {
-                if (!this.bindEntityTexture(entity)) {
-                    return;
-                }
-            } else {
-                GlStateManager.bindTexture(0);
-                RenderUtils.INSTANCE.glColor(esp.getColor(entity));
-            }
-
-            if (semiVisible) {
-                GlStateManager.pushMatrix();
-                GlStateManager.color(1f, 1f, 1f, 0.3F);
-                GlStateManager.depthMask(false);
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(770, 771);
-                GlStateManager.alphaFunc(516, 0.003921569F);
-            }
-
-            if (esp.handleEvents() && esp.shouldRender(entity)) {
-                boolean fancyGraphics = mc.gameSettings.fancyGraphics;
-                mc.gameSettings.fancyGraphics = false;
-
-                float gamma = mc.gameSettings.gammaSetting;
-                mc.gameSettings.gammaSetting = 100000F;
-
-                switch (esp.getMode().toLowerCase()) {
-                    case "wireframe":
-                        GL11.glPushMatrix();
-                        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-
-                        GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
-                        GL11.glDisable(GL11.GL_TEXTURE_2D);
-                        GL11.glDisable(GL11.GL_LIGHTING);
-                        GL11.glDisable(GL11.GL_DEPTH_TEST);
-                        GL11.glEnable(GL11.GL_LINE_SMOOTH);
-                        GL11.glEnable(GL11.GL_BLEND);
-                        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-
-                        RenderUtils.INSTANCE.glColor(esp.getColor(entity));
-                        GL11.glLineWidth(esp.getWireframeWidth());
-
-                        this.mainModel.render(
-                                entity,
-                                limbSwing,
-                                limbSwingAmount,
-                                ageInTicks,
-                                netHeadYaw,
-                                headPitch,
-                                scaleFactor
-                        );
-
-                        GL11.glPopAttrib();
-                        GL11.glPopMatrix();
-                        break;
-
-                    case "outline":
-                        ClientUtils.INSTANCE.disableFastRender();
+    protected void renderModel(T entitylivingbaseIn, float p_77036_2_, float p_77036_3_, float p_77036_4_, float p_77036_5_, float p_77036_6_, float scaleFactor)
+    {
+        boolean visible = !entitylivingbaseIn.isInvisible();
+                final TrueSight trueSight = TrueSight.INSTANCE;
+                boolean semiVisible = !visible && (!entitylivingbaseIn.isInvisibleToPlayer(mc.thePlayer) || (trueSight.handleEvents() && trueSight.getEntities()));
+        
+                if (visible || semiVisible) {
+                    final ESP esp = ESP.INSTANCE;
+                    boolean shouldRenderGaussianESP = esp.handleEvents() && esp.shouldRender(entitylivingbaseIn) && esp.getMode().equals("Gaussian");
+        
+                    if (!shouldRenderGaussianESP) {
+                        if (!bindEntityTexture(entitylivingbaseIn)) {
+                            return;
+                        }
+                    } else {
+                        GlStateManager.bindTexture(0);
+                        RenderUtils.INSTANCE.glColor(esp.getColor(entitylivingbaseIn));
+                    }
+        
+                    if (semiVisible) {
+                        pushMatrix();
+                        color(1f, 1f, 1f, 0.3F);
+                        depthMask(false);
+                        glEnable(GL_BLEND);
+                        blendFunc(770, 771);
+                        alphaFunc(516, 0.003921569F);
+                    }
+        
+                    if (esp.handleEvents() && esp.shouldRender(entitylivingbaseIn)) {
+                        boolean fancyGraphics = mc.gameSettings.fancyGraphics;
+                        mc.gameSettings.fancyGraphics = false;
+        
+                        float gamma = mc.gameSettings.gammaSetting;
+                        mc.gameSettings.gammaSetting = 100000F;
+        
+                        switch (esp.getMode().toLowerCase()) {
+                            case "wireframe":
+                                glPushMatrix();
+                                glPushAttrib(GL_ALL_ATTRIB_BITS);
+                                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                                glDisable(GL_TEXTURE_2D);
+                                glDisable(GL_LIGHTING);
+                                glDisable(GL_DEPTH_TEST);
+                                glEnable(GL_LINE_SMOOTH);
+                                glEnable(GL_BLEND);
+                                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                                RenderUtils.INSTANCE.glColor(esp.getColor(entitylivingbaseIn));
+                                glLineWidth(esp.getWireframeWidth());
+                                mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+                                glPopAttrib();
+                                glPopMatrix();
+                                break;
+                            case "outline":
+                                ClientUtils.INSTANCE.disableFastRender();
+                                resetColor();
+        
+                                final Color color = esp.getColor(entitylivingbaseIn);
+                                OutlineUtils.setColor(color);
+                                OutlineUtils.renderOne(esp.getOutlineWidth());
+                                mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+                                OutlineUtils.setColor(color);
+                                OutlineUtils.renderTwo();
+                                mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+                                OutlineUtils.setColor(color);
+                                OutlineUtils.renderThree();
+                                mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+                                OutlineUtils.setColor(color);
+                                OutlineUtils.renderFour(color);
+                                mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+                                OutlineUtils.setColor(color);
+                                OutlineUtils.renderFive();
+                                OutlineUtils.setColor(Color.WHITE);
+                        }
+                        mc.gameSettings.fancyGraphics = fancyGraphics;
+                        mc.gameSettings.gammaSetting = gamma;
+                    }
+        
+                    mainModel.render(entitylivingbaseIn, p_77036_2_, p_77036_3_, p_77036_4_, p_77036_5_, p_77036_6_, scaleFactor);
+        
+                    if (shouldRenderGaussianESP) {
                         resetColor();
-
-                        Color color = esp.getColor(entity);
-
-                        OutlineUtils.setColor(color);
-                        OutlineUtils.renderOne(esp.getOutlineWidth());
-                        this.mainModel.render(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-
-                        OutlineUtils.setColor(color);
-                        OutlineUtils.renderTwo();
-                        this.mainModel.render(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-
-                        OutlineUtils.setColor(color);
-                        OutlineUtils.renderThree();
-                        this.mainModel.render(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-
-                        OutlineUtils.setColor(color);
-                        OutlineUtils.renderFour(color);
-                        this.mainModel.render(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-
-                        OutlineUtils.renderFive();
-                        OutlineUtils.setColor(Color.WHITE);
-                        break;
+                    }
+        
+                    if (semiVisible) {
+                        disableBlend();
+                        alphaFunc(516, 0.1F);
+                        popMatrix();
+                        depthMask(true);
+                    }
                 }
-
-                mc.gameSettings.fancyGraphics = fancyGraphics;
-                mc.gameSettings.gammaSetting = gamma;
-            }
-
-            // Render normal model
-            this.mainModel.render(
-                    entity,
-                    limbSwing,
-                    limbSwingAmount,
-                    ageInTicks,
-                    netHeadYaw,
-                    headPitch,
-                    scaleFactor
-            );
-
-            if (shouldRenderGaussianESP) {
-                resetColor();
-            }
-
-            if (semiVisible) {
-                GlStateManager.disableBlend();
-                GlStateManager.alphaFunc(516, 0.1F);
-                GlStateManager.popMatrix();
-                GlStateManager.depthMask(true);
-            }
-        }
     }
-
 
     protected boolean setDoRenderBrightness(T entityLivingBaseIn, float partialTicks)
     {
@@ -813,10 +750,11 @@ public abstract class RendererLivingEntity<T extends EntityLivingBase> extends R
         }
     }
 
-    protected boolean canRenderName(T entity) {
+    protected boolean canRenderName(T entity)
+    {
         if (NameTags.INSTANCE.shouldRenderNameTags(entity)) {
-            return false;
-        }
+                    return false;
+                }
 
         EntityPlayerSP entityplayersp = Minecraft.getMinecraft().thePlayer;
 

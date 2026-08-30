@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
-
-import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
-import net.ccbluex.liquidbounce.utils.render.shader.shaders.GradientFontShader;
-import net.ccbluex.liquidbounce.utils.render.shader.shaders.RainbowFontShader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -32,11 +28,23 @@ import net.optifine.render.GlBlendState;
 import net.optifine.util.FontUtils;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.GL11;
-
+import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
+import net.ccbluex.liquidbounce.utils.render.shader.shaders.GradientFontShader;
+import net.ccbluex.liquidbounce.utils.render.shader.shaders.RainbowFontShader;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 
 public class FontRenderer implements IResourceManagerReloadListener
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinFontRenderer.java
+    private boolean gradientEnabled1 = false;
+
+    private boolean rainbowEnabled1 = false;
+
+    private boolean gradientEnabled0 = false;
+
+    // Local Variables
+    private boolean rainbowEnabled0 = false;
+
     private static final ResourceLocation[] unicodePageLocations = new ResourceLocation[256];
     private final int[] charWidth = new int[256];
     public int FONT_HEIGHT = 9;
@@ -65,11 +73,6 @@ public class FontRenderer implements IResourceManagerReloadListener
     private float[] charWidthFloat = new float[256];
     private boolean blend = false;
     private GlBlendState oldBlendState = new GlBlendState();
-
-    private boolean rainbowEnabled0 = false;
-    private boolean gradientEnabled0 = false;
-    private boolean rainbowEnabled1 = false;
-    private boolean gradientEnabled1 = false;
 
     public FontRenderer(GameSettings gameSettingsIn, ResourceLocation location, TextureManager textureManagerIn, boolean unicode)
     {
@@ -331,9 +334,6 @@ public class FontRenderer implements IResourceManagerReloadListener
 
     public int drawString(String text, float x, float y, int color, boolean dropShadow)
     {
-        rainbowEnabled0 = RainbowFontShader.INSTANCE.isInUse();
-        gradientEnabled0 = GradientFontShader.INSTANCE.isInUse();
-
         this.enableAlpha();
 
         if (this.blend)
@@ -348,23 +348,20 @@ public class FontRenderer implements IResourceManagerReloadListener
 
         if (dropShadow)
         {
-            if (rainbowEnabled0 || gradientEnabled0)
-            {
-                glUseProgram(0);
-            }
-
+        rainbowEnabled0 = RainbowFontShader.INSTANCE.isInUse();
+                gradientEnabled0 = GradientFontShader.INSTANCE.isInUse();
+        
+                if (rainbowEnabled0 || gradientEnabled0) {
+                    glUseProgram(0);
+                }
             i = this.renderString(text, x + 1.0F, y + 1.0F, color, true);
-
-            if (rainbowEnabled0)
-            {
-                glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
-            }
-
-            if (gradientEnabled0)
-            {
-                glUseProgram(GradientFontShader.INSTANCE.getProgramId());
-            }
-
+        if (rainbowEnabled0) {
+                    glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
+                }
+        
+                if (gradientEnabled0) {
+                    glUseProgram(GradientFontShader.INSTANCE.getProgramId());
+                }
             i = Math.max(i, this.renderString(text, x, y, color, false));
         }
         else
@@ -378,7 +375,6 @@ public class FontRenderer implements IResourceManagerReloadListener
         }
 
         return i;
-
     }
 
     private String bidiReorder(String text)
@@ -406,8 +402,9 @@ public class FontRenderer implements IResourceManagerReloadListener
 
     private void renderStringAtPos(String text, boolean shadow)
     {
-        rainbowEnabled1 = RainbowFontShader.INSTANCE.isInUse();
         gradientEnabled1 = GradientFontShader.INSTANCE.isInUse();
+
+        rainbowEnabled1 = RainbowFontShader.INSTANCE.isInUse();
 
         for (int i = 0; i < text.length(); ++i)
         {
@@ -443,15 +440,13 @@ public class FontRenderer implements IResourceManagerReloadListener
                     }
 
                     this.textColor = i1;
-                    if (rainbowEnabled1 || gradientEnabled1)
-                    {
-                        glUseProgram(0);
-                    }
-
-                    this.setColor((float)(i1 >> 16) / 255.0F,
-                            (float)(i1 >> 8 & 255) / 255.0F,
-                            (float)(i1 & 255) / 255.0F,
-                            this.alpha);
+        if (rainbowEnabled1) {
+                    glUseProgram(0);
+                }
+        if (gradientEnabled1) {
+                    glUseProgram(0);
+                }
+                    this.setColor((float)(i1 >> 16) / 255.0F, (float)(i1 >> 8 & 255) / 255.0F, (float)(i1 & 255) / 255.0F, this.alpha);
                 }
                 else if (l == 16)
                 {
@@ -480,15 +475,12 @@ public class FontRenderer implements IResourceManagerReloadListener
                     this.strikethroughStyle = false;
                     this.underlineStyle = false;
                     this.italicStyle = false;
-                    if (rainbowEnabled1)
-                    {
-                        glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
-                    }
-                    else if (gradientEnabled1)
-                    {
-                        glUseProgram(GradientFontShader.INSTANCE.getProgramId());
-                    }
-
+        if (rainbowEnabled1) {
+                    glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
+                }
+        if (gradientEnabled1) {
+                    glUseProgram(GradientFontShader.INSTANCE.getProgramId());
+                }
                     this.setColor(this.red, this.blue, this.green, this.alpha);
                 }
 
@@ -559,15 +551,15 @@ public class FontRenderer implements IResourceManagerReloadListener
                 this.doDraw(f);
             }
         }
-        if (rainbowEnabled1)
-        {
-            glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
-        }
-        else if (gradientEnabled1)
-        {
-            glUseProgram(GradientFontShader.INSTANCE.getProgramId());
-        }
-    }
+    
+        if (rainbowEnabled1) {
+                    glUseProgram(RainbowFontShader.INSTANCE.getProgramId());
+                }
+
+        if (gradientEnabled1) {
+                    glUseProgram(GradientFontShader.INSTANCE.getProgramId());
+                }
+}
 
     protected void doDraw(float p_doDraw_1_)
     {
@@ -616,95 +608,89 @@ public class FontRenderer implements IResourceManagerReloadListener
 
     private int renderString(String text, float x, float y, int color, boolean dropShadow)
     {
-        if (text != null)
-        {
-            text = NameProtect.INSTANCE.handleTextMessage(text);
-        }
-
         if (text == null)
         {
             return 0;
         }
-        else
+
+        text = NameProtect.INSTANCE.handleTextMessage(text);
+
+        if (this.bidiFlag)
         {
-            if (this.bidiFlag)
-            {
-                text = this.bidiReorder(text);
-            }
-
-            if ((color & -67108864) == 0)
-            {
-                color |= -16777216;
-            }
-
-            if (dropShadow)
-            {
-                color = (color & 16579836) >> 2 | color & -16777216;
-            }
-
-            this.red = (float)(color >> 16 & 255) / 255.0F;
-            this.blue = (float)(color >> 8 & 255) / 255.0F;
-            this.green = (float)(color & 255) / 255.0F;
-            this.alpha = (float)(color >> 24 & 255) / 255.0F;
-            this.setColor(this.red, this.blue, this.green, this.alpha);
-            this.posX = x;
-            this.posY = y;
-            this.renderStringAtPos(text, dropShadow);
-            return (int)this.posX;
+            text = this.bidiReorder(text);
         }
+
+        if ((color & -67108864) == 0)
+        {
+            color |= -16777216;
+        }
+
+        if (dropShadow)
+        {
+            color = (color & 16579836) >> 2 | color & -16777216;
+        }
+
+        this.red = (float)(color >> 16 & 255) / 255.0F;
+        this.blue = (float)(color >> 8 & 255) / 255.0F;
+        this.green = (float)(color & 255) / 255.0F;
+        this.alpha = (float)(color >> 24 & 255) / 255.0F;
+
+        this.setColor(this.red, this.blue, this.green, this.alpha);
+
+        this.posX = x;
+        this.posY = y;
+
+        this.renderStringAtPos(text, dropShadow);
+
+        return (int)this.posX;
     }
 
     public int getStringWidth(String text)
     {
-        if (text != null)
-        {
-            text = NameProtect.INSTANCE.handleTextMessage(text);
-        }
-
         if (text == null)
         {
             return 0;
         }
-        else
+
+        text = NameProtect.INSTANCE.handleTextMessage(text);
+
+        float f = 0.0F;
+        boolean flag = false;
+
+        for (int i = 0; i < text.length(); ++i)
         {
-            float f = 0.0F;
-            boolean flag = false;
+            char c0 = text.charAt(i);
+            float f1 = this.getCharWidthFloat(c0);
 
-            for (int i = 0; i < text.length(); ++i)
+            if (f1 < 0.0F && i < text.length() - 1)
             {
-                char c0 = text.charAt(i);
-                float f1 = this.getCharWidthFloat(c0);
+                ++i;
+                c0 = text.charAt(i);
 
-                if (f1 < 0.0F && i < text.length() - 1)
+                if (c0 != 108 && c0 != 76)
                 {
-                    ++i;
-                    c0 = text.charAt(i);
-
-                    if (c0 != 108 && c0 != 76)
+                    if (c0 == 114 || c0 == 82)
                     {
-                        if (c0 == 114 || c0 == 82)
-                        {
-                            flag = false;
-                        }
+                        flag = false;
                     }
-                    else
-                    {
-                        flag = true;
-                    }
-
-                    f1 = 0.0F;
+                }
+                else
+                {
+                    flag = true;
                 }
 
-                f += f1;
-
-                if (flag && f1 > 0.0F)
-                {
-                    f += this.unicodeFlag ? 1.0F : this.offsetBold;
-                }
+                f1 = 0.0F;
             }
 
-            return Math.round(f);
+            f += f1;
+
+            if (flag && f1 > 0.0F)
+            {
+                f += this.unicodeFlag ? 1.0F : this.offsetBold;
+            }
         }
+
+        return Math.round(f);
     }
 
     public int getCharWidth(char character)

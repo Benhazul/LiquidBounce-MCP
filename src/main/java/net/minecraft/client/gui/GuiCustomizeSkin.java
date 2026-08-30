@@ -37,7 +37,8 @@ public class GuiCustomizeSkin extends GuiScreen
         this.buttonList.add(new GuiButton(200, this.width / 2 - 100, this.height / 6 + 24 * (i >> 1), I18n.format("gui.done", new Object[0])));
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         if (button.enabled)
         {
             if (button.id == 210)

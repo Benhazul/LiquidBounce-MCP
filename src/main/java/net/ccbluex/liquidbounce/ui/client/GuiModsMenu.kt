@@ -17,7 +17,6 @@ import net.ccbluex.liquidbounce.utils.ui.AbstractScreen
 import net.minecraft.client.gui.GuiButton
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.GuiTextField
-import net.optifine.reflect.Reflector.GuiModList
 import org.lwjgl.input.Keyboard
 
 class GuiModsMenu(private val prevGui: GuiScreen) : AbstractScreen() {
@@ -25,7 +24,7 @@ class GuiModsMenu(private val prevGui: GuiScreen) : AbstractScreen() {
     private lateinit var customTextField: GuiTextField
 
     override fun initGui() {
-        +GuiButton(0, width / 2 - 100, height / 4 + 48, "Forge Mods")
+//        +GuiButton(0, width / 2 - 100, height / 4 + 48, "Forge Mods")
         +GuiButton(1, width / 2 - 100, height / 4 + 48 + 25, "Scripts")
         +GuiButton(
             2,
@@ -53,9 +52,6 @@ class GuiModsMenu(private val prevGui: GuiScreen) : AbstractScreen() {
 
     override fun actionPerformed(button: GuiButton) {
         when (val id = button.id) {
-            // Forge Mods
-            //0 -> mc.displayGuiScreen(GuiModList(this))
-
             // Scripts
             1 -> mc.displayGuiScreen(GuiScripts(this))
 

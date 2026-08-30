@@ -43,8 +43,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
 import net.minecraft.world.border.WorldBorder;
 import net.optifine.CustomColors;
-import org.lwjgl.opengl.GL11;
-
 import net.ccbluex.liquidbounce.event.EventManager;
 import net.ccbluex.liquidbounce.event.Render2DEvent;
 import net.ccbluex.liquidbounce.features.module.modules.render.AntiBlind;
@@ -58,9 +56,14 @@ import net.ccbluex.liquidbounce.utils.render.ColorSettingsKt;
 import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import net.ccbluex.liquidbounce.utils.render.shader.shaders.GradientShader;
 import net.ccbluex.liquidbounce.utils.render.shader.shaders.RainbowShader;
+import net.minecraft.entity.player.InventoryPlayer;
+import org.lwjgl.opengl.GL11;
+import static net.minecraft.client.renderer.GlStateManager.*;
+import static org.lwjgl.opengl.GL11.*;
 
 public class GuiIngame extends Gui
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiInGame.java
     private static final ResourceLocation vignetteTexPath = new ResourceLocation("textures/misc/vignette.png");
     private static final ResourceLocation widgetsTexPath = new ResourceLocation("textures/gui/widgets.png");
     private static final ResourceLocation pumpkinBlurTexPath = new ResourceLocation("textures/misc/pumpkinblur.png");
@@ -349,18 +352,17 @@ public class GuiIngame extends Gui
 
     protected void renderTooltip(ScaledResolution sr, float partialTicks)
     {
+        liquidBounce$injectRender2DEvent(partialTicks);
+
         final HUD hud = HUD.INSTANCE;
         final RenderUtils render = RenderUtils.INSTANCE;
 
-        if (this.mc.getRenderViewEntity() instanceof EntityPlayer)
-        {
-            EntityPlayer entityplayer = (EntityPlayer)this.mc.getRenderViewEntity();
+        if (mc.getRenderViewEntity() instanceof EntityPlayer) {
+            EntityPlayer entityPlayer0 = (EntityPlayer) mc.getRenderViewEntity();
+            float slot = entityPlayer0.inventory.currentItem;
 
-            if (hud.handleEvents() && hud.getCustomHotbar())
-            {
-                float slot = (float)entityplayer.inventory.currentItem;
-                if (hud.getSmoothHotbarSlot())
-                {
+            if (hud.handleEvents() && hud.getCustomHotbar()) {
+                if (hud.getSmoothHotbarSlot()) {
                     slot = InventoryUtils.INSTANCE.getLerpedSlot();
                 }
 
@@ -368,6 +370,7 @@ public class GuiIngame extends Gui
                 int height = sr.getScaledHeight() - 1;
 
                 float gradientOffset = (System.currentTimeMillis() % 10000) / 10000f;
+
                 float gradientX = (hud.getGradientX() == 0f) ? 0f : 1f / hud.getGradientX();
                 float gradientY = (hud.getGradientY() == 0f) ? 0f : 1f / hud.getGradientY();
 
@@ -385,76 +388,114 @@ public class GuiIngame extends Gui
 
                 AWTFontRenderer.Companion.setAssumeNonVolatile(true);
 
-                if (isGradient)
-                {
-                    GradientShader.begin(true, gradientX, gradientY, gradientColors, hud.getGradientHotbarSpeed(), gradientOffset);
+                if (isGradient) {
+                    GradientShader.begin(
+                            true,
+                            gradientX,
+                            gradientY,
+                            gradientColors,
+                            hud.getGradientHotbarSpeed(),
+                            gradientOffset
+                    );
                 }
 
-                if (isRainbow)
-                {
+                if (isRainbow) {
                     RainbowShader.begin(true, rainbowX, rainbowY, rainbowOffset);
                 }
 
-                render.drawRoundedRectInt(middleScreen - 91, height - 22, middleScreen + 91, height, hud.getHbBackgroundColors().color().getRGB(), hud.getRoundedHotbarRadius(), RenderUtils.RoundedCorners.ALL);
+                // Inner - Background
+                render.drawRoundedRectInt(
+                        middleScreen - 91, height - 22,
+                        middleScreen + 91, height,
+                        hud.getHbBackgroundColors().color().getRGB(),
+                        hud.getRoundedHotbarRadius(),
+                        RenderUtils.RoundedCorners.ALL
+                );
 
-                if (isRainbow) RainbowShader.INSTANCE.stopShader();
-                if (isGradient) GradientShader.INSTANCE.stopShader();
+                if (isRainbow) {
+                    RainbowShader.INSTANCE.stopShader();
+                }
+                if (isGradient) {
+                    GradientShader.INSTANCE.stopShader();
+                }
 
-                render.drawRoundedRect(middleScreen - 91 - 1 + slot * 20 + 1, height - 22, middleScreen - 91 - 1 + slot * 20 + 23, height - 23 - 1 + 24, hud.getHbHighlightColors().color().getRGB(), hud.getRoundedHotbarRadius(), RenderUtils.RoundedCorners.ALL);
-                render.drawRoundedBorder(middleScreen - 91, height - 21.55F, middleScreen + 91 + 0.1F, height - 0.5F, hud.getHbBackgroundBorder(), hud.getHbBackgroundBorderColors().color().getRGB(), hud.getRoundedHotbarRadius());
-                render.drawRoundedBorder(middleScreen - 91 - 1 + slot * 20 + 1, height - 21.5F, middleScreen - 91 - 1 + slot * 20 + 23.15F, height - 23 - 1 + 23.5F, hud.getHbHighlightBorder(), hud.getHbHighlightBorderColors().color().getRGB(), hud.getRoundedHotbarRadius());
+                // Inner - Highlight
+                render.drawRoundedRect(
+                        middleScreen - 91 - 1 + slot * 20 + 1, height - 22,
+                        middleScreen - 91 - 1 + slot * 20 + 23, height - 23 - 1 + 24,
+                        hud.getHbHighlightColors().color().getRGB(),
+                        hud.getRoundedHotbarRadius(),
+                        RenderUtils.RoundedCorners.ALL
+                );
+
+                // Border - Background
+                render.drawRoundedBorder(
+                        middleScreen - 91, height - 21.55F,
+                        middleScreen + 91 + 0.1F, height - 0.5F,
+                        hud.getHbBackgroundBorder(),
+                        hud.getHbBackgroundBorderColors().color().getRGB(),
+                        hud.getRoundedHotbarRadius()
+                );
+
+                // Border - Highlight
+                render.drawRoundedBorder(
+                        middleScreen - 91 - 1 + slot * 20 + 1, height - 21.5F,
+                        middleScreen - 91 - 1 + slot * 20 + 23.15F, height - 23 - 1 + 23.5F,
+                        hud.getHbHighlightBorder(),
+                        hud.getHbHighlightBorderColors().color().getRGB(),
+                        hud.getRoundedHotbarRadius()
+                );
 
                 GL11.glEnable(GL11.GL_DEPTH_TEST);
                 GL11.glPopMatrix();
 
-                GlStateManager.enableRescaleNormal();
-                GlStateManager.enableBlend();
-                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                enableRescaleNormal();
+                glEnable(GL_BLEND);
+                tryBlendFuncSeparate(770, 771, 1, 0);
                 RenderHelper.enableGUIStandardItemLighting();
 
-                for (int j = 0; j < 9; ++j)
-                {
-                    int k = sr.getScaledWidth() / 2 - 90 + j * 20 + 2;
-                    int l = sr.getScaledHeight() - 16 - 3;
-                    this.renderHotbarItem(j, k, l, partialTicks, entityplayer);
+                for (int j0 = 0; j0 < 9; ++j0) {
+                    int l0 = height - 16 - 3;
+                    int k0 = middleScreen - 90 + j0 * 20 + 2;
+                    renderHotbarItem(j0, k0, l0, partialTicks, entityPlayer0);
                 }
 
                 RenderHelper.disableStandardItemLighting();
-                GlStateManager.disableRescaleNormal();
-                GlStateManager.disableBlend();
+                disableRescaleNormal();
+                disableBlend();
+
                 AWTFontRenderer.Companion.setAssumeNonVolatile(false);
-            }
-            else
-            {
-                GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                this.mc.getTextureManager().bindTexture(widgetsTexPath);
-                int i = sr.getScaledWidth() / 2;
-                float f = this.zLevel;
-                this.zLevel = -90.0F;
-                this.drawTexturedModalRect(i - 91, sr.getScaledHeight() - 22, 0, 0, 182, 22);
-                this.drawTexturedModalRect(i - 91 - 1 + entityplayer.inventory.currentItem * 20, sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
-                this.zLevel = f;
-                GlStateManager.enableRescaleNormal();
-                GlStateManager.enableBlend();
-                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-                RenderHelper.enableGUIStandardItemLighting();
 
-                for (int j = 0; j < 9; ++j)
-                {
-                    int k = sr.getScaledWidth() / 2 - 90 + j * 20 + 2;
-                    int l = sr.getScaledHeight() - 16 - 3;
-                    this.renderHotbarItem(j, k, l, partialTicks, entityplayer);
-                }
-
-                RenderHelper.disableStandardItemLighting();
-                GlStateManager.disableRescaleNormal();
-                GlStateManager.disableBlend();
+                return;
             }
         }
 
-        if (!ClassUtils.INSTANCE.hasClass("net.labymod.api.LabyModAPI"))
+        if (this.mc.getRenderViewEntity() instanceof EntityPlayer)
         {
-            EventManager.INSTANCE.call(new Render2DEvent(partialTicks));
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            this.mc.getTextureManager().bindTexture(widgetsTexPath);
+            EntityPlayer entityplayer = (EntityPlayer)this.mc.getRenderViewEntity();
+            int i = sr.getScaledWidth() / 2;
+            float f = this.zLevel;
+            this.zLevel = -90.0F;
+            this.drawTexturedModalRect(i - 91, sr.getScaledHeight() - 22, 0, 0, 182, 22);
+            this.drawTexturedModalRect(i - 91 - 1 + entityplayer.inventory.currentItem * 20, sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
+            this.zLevel = f;
+            GlStateManager.enableRescaleNormal();
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            RenderHelper.enableGUIStandardItemLighting();
+
+            for (int j = 0; j < 9; ++j)
+            {
+                int k = sr.getScaledWidth() / 2 - 90 + j * 20 + 2;
+                int l = sr.getScaledHeight() - 16 - 3;
+                this.renderHotbarItem(j, k, l, partialTicks, entityplayer);
+            }
+
+            RenderHelper.disableStandardItemLighting();
+            GlStateManager.disableRescaleNormal();
+            GlStateManager.disableBlend();
         }
     }
 
@@ -621,7 +662,8 @@ public class GuiIngame extends Gui
 
     private void renderScoreboard(ScoreObjective objective, ScaledResolution scaledRes)
     {
-        if (HUD.INSTANCE.handleEvents()) return;
+        if (HUD.INSTANCE.handleEvents())
+                    return;
 
         Scoreboard scoreboard = objective.getScoreboard();
         Collection<Score> collection = scoreboard.getSortedScores(objective);
@@ -970,7 +1012,10 @@ public class GuiIngame extends Gui
 
     private void renderBossHealth()
     {
-        if (AntiBlind.INSTANCE.handleEvents() && AntiBlind.INSTANCE.getBossHealth()) return;
+        final AntiBlind antiBlind = AntiBlind.INSTANCE;
+        
+                if (antiBlind.handleEvents() && antiBlind.getBossHealth())
+                    return;
 
         if (BossStatus.bossName != null && BossStatus.statusBarTime > 0)
         {
@@ -999,7 +1044,10 @@ public class GuiIngame extends Gui
 
     private void renderPumpkinOverlay(ScaledResolution scaledRes)
     {
-        if (AntiBlind.INSTANCE.handleEvents() && AntiBlind.INSTANCE.getPumpkinEffect()) return;
+        final AntiBlind antiBlind = AntiBlind.INSTANCE;
+        
+                if (antiBlind.handleEvents() && antiBlind.getPumpkinEffect())
+                    return;
 
         GlStateManager.disableDepth();
         GlStateManager.depthMask(false);
@@ -1161,9 +1209,7 @@ public class GuiIngame extends Gui
 
         if (this.mc.thePlayer != null)
         {
-            SilentHotbarModule module = SilentHotbarModule.INSTANCE;
-            int slot = SilentHotbar.INSTANCE.renderSlot(module.handleEvents() && module.getKeepHighlightedName());
-            ItemStack itemstack = this.mc.thePlayer.inventory.getStackInSlot(slot);
+            ItemStack itemstack = hookSilentHotbarHighlightedName(this.mc.thePlayer.inventory);
 
             if (itemstack == null)
             {
@@ -1271,5 +1317,21 @@ public class GuiIngame extends Gui
     public void resetPlayersOverlayFooterHeader()
     {
         this.overlayPlayerList.resetFooterHeader();
+    }
+
+
+    private ItemStack hookSilentHotbarHighlightedName(InventoryPlayer instance) {
+        SilentHotbarModule module = SilentHotbarModule.INSTANCE;
+
+        int slot = SilentHotbar.INSTANCE.renderSlot(module.handleEvents() && module.getKeepHighlightedName());
+
+        return instance.getStackInSlot(slot);
+    }
+
+
+    private void liquidBounce$injectRender2DEvent(float delta) {
+        if (!ClassUtils.INSTANCE.hasClass("net.labymod.api.LabyModAPI")) {
+            EventManager.INSTANCE.call(new Render2DEvent(delta));
+        }
     }
 }

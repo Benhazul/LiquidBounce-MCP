@@ -10,6 +10,7 @@ import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.Packet;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class TileEntity
 {
+    public static final AxisAlignedBB INFINITE_EXTENT_AABB = new AxisAlignedBB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     private static final Logger logger = LogManager.getLogger();
     private static Map < String, Class <? extends TileEntity >> nameToClassMap = Maps. < String, Class <? extends TileEntity >> newHashMap();
     private static Map < Class <? extends TileEntity > , String > classToNameMap = Maps. < Class <? extends TileEntity > , String > newHashMap();
@@ -249,6 +251,42 @@ public abstract class TileEntity
     public boolean func_183000_F()
     {
         return false;
+    }
+
+    public AxisAlignedBB getRenderBoundingBox()
+    {
+        AxisAlignedBB bb = INFINITE_EXTENT_AABB;
+        Block type = this.getBlockType();
+        BlockPos pos = this.getPos();
+        if (type == Blocks.enchanting_table)
+        {
+            bb = new AxisAlignedBB(pos, pos.add(1, 1, 1));
+        }
+        else if (type == Blocks.chest || type == Blocks.trapped_chest)
+        {
+            bb = new AxisAlignedBB(pos.add(-1, 0, -1), pos.add(2, 2, 2));
+        }
+        else if (type != null && type != Blocks.beacon)
+        {
+            AxisAlignedBB cbb = null;
+            try
+            {
+                cbb = type.getCollisionBoundingBox(this.worldObj, pos, this.worldObj.getBlockState(pos));
+            }
+            catch (Exception e)
+            {
+                cbb = new AxisAlignedBB(pos, pos.add(1, 1, 1));
+            }
+            if (cbb != null)
+            {
+                bb = cbb;
+            }
+            else
+            {
+                bb = new AxisAlignedBB(pos, pos.add(1, 1, 1));
+            }
+        }
+        return bb;
     }
 
     static

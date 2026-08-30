@@ -31,6 +31,7 @@ import net.ccbluex.liquidbounce.utils.ui.AbstractScreen
 import net.minecraft.client.gui.GuiButton
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.GuiTextField
+import net.minecraftforge.fml.client.config.GuiSlider
 import org.lwjgl.input.Keyboard
 
 class GuiClientConfiguration(val prevGui: GuiScreen) : AbstractScreen() {
@@ -41,7 +42,7 @@ class GuiClientConfiguration(val prevGui: GuiScreen) : AbstractScreen() {
     private lateinit var particlesButton: GuiButton
     private lateinit var altsModeButton: GuiButton
     private lateinit var unformattedAltsButton: GuiButton
-    private lateinit var altsSlider: GuiSliderMCP
+    private lateinit var altsSlider: GuiSlider
 
     private lateinit var titleButton: GuiButton
 
@@ -87,7 +88,7 @@ class GuiClientConfiguration(val prevGui: GuiScreen) : AbstractScreen() {
             "Random alts mode (${if (stylisedAlts) "Stylised" else "Legacy"})"
         )
 
-        altsSlider = +GuiSliderMCP(
+        altsSlider = +GuiSlider(
             -1,
             width / 2 - 100,
             height / 4 + 210 + 25,
@@ -97,7 +98,9 @@ class GuiClientConfiguration(val prevGui: GuiScreen) : AbstractScreen() {
             ")",
             6.0,
             16.0,
-            altsLength.toDouble()
+            altsLength.toDouble(),
+            false,
+            true
         ) {
             altsLength = it.valueInt
         }

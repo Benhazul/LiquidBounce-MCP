@@ -33,8 +33,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import javax.imageio.ImageIO;
-
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandManager;
@@ -78,9 +76,11 @@ import net.minecraft.world.storage.WorldInfo;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
 
 public abstract class MinecraftServer implements Runnable, ICommandSender, IThreadListener, IPlayerUsage
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/tweaks/MixinMinecraftServer.java
     private static final Logger logger = LogManager.getLogger();
     public static final File USER_CACHE_FILE = new File("usercache.json");
     private static MinecraftServer mcServer;
@@ -147,6 +147,22 @@ public abstract class MinecraftServer implements Runnable, ICommandSender, IThre
         this.authService = new YggdrasilAuthenticationService(proxy, UUID.randomUUID().toString());
         this.sessionService = this.authService.createMinecraftSessionService();
         this.profileRepo = this.authService.createProfileRepository();
+
+        try
+        {
+            ClientUtils.INSTANCE.getLOGGER().info(
+                    "{} mixin successfully loaded!",
+                    getClass().getSimpleName()
+            );
+        }
+        catch (Exception e)
+        {
+            ClientUtils.INSTANCE.getLOGGER().error(
+                    "Failed to load {} mixin: {}",
+                    getClass().getSimpleName(),
+                    e.getMessage()
+            );
+        }
     }
 
     public MinecraftServer(File workDir, Proxy proxy, File profileCacheDir)
@@ -161,6 +177,22 @@ public abstract class MinecraftServer implements Runnable, ICommandSender, IThre
         this.authService = new YggdrasilAuthenticationService(proxy, UUID.randomUUID().toString());
         this.sessionService = this.authService.createMinecraftSessionService();
         this.profileRepo = this.authService.createProfileRepository();
+
+        try
+        {
+            ClientUtils.INSTANCE.getLOGGER().info(
+                    "{} mixin successfully loaded!",
+                    getClass().getSimpleName()
+            );
+        }
+        catch (Exception e)
+        {
+            ClientUtils.INSTANCE.getLOGGER().error(
+                    "Failed to load {} mixin: {}",
+                    getClass().getSimpleName(),
+                    e.getMessage()
+            );
+        }
     }
 
     protected ServerCommandManager createNewCommandManager()
@@ -547,30 +579,21 @@ public abstract class MinecraftServer implements Runnable, ICommandSender, IThre
     private void addFaviconToStatusResponse(ServerStatusResponse response)
     {
         File file1 = this.getFile("server-icon.png");
-
         if (file1.isFile())
         {
             ByteBuf bytebuf = Unpooled.buffer();
-
             try
             {
                 BufferedImage bufferedimage = ImageIO.read(file1);
-                Validate.validState(bufferedimage.getWidth() == 64, "Must be 64 pixels wide");
-                Validate.validState(bufferedimage.getHeight() == 64, "Must be 64 pixels high");
 
-                ImageIO.write(bufferedimage, "PNG", new ByteBufOutputStream(bytebuf));
-
+                Validate.validState(bufferedimage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
+                Validate.validState(bufferedimage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
+                ImageIO.write(bufferedimage, "PNG", (OutputStream)(new ByteBufOutputStream(bytebuf)));
                 ByteBuf bytebuf1 = Base64.encode(bytebuf);
-
-                response.setFavicon("data:image/png;base64," + bytebuf1.toString(Charsets.UTF_8));
 
                 try
                 {
-                    ClientUtils.INSTANCE.getLOGGER().info("Releasing favicon ByteBuf: {}", bytebuf1);
-                }
-                catch (Exception e)
-                {
-                    ClientUtils.INSTANCE.getLOGGER().error("Error occurred during favicon ByteBuf release", e);
+                    response.setFavicon("data:image/png;base64," + bytebuf1.toString(Charsets.UTF_8));
                 }
                 finally
                 {
@@ -582,7 +605,7 @@ public abstract class MinecraftServer implements Runnable, ICommandSender, IThre
             }
             catch (Exception exception)
             {
-                logger.error("Couldn't load server icon", exception);
+                logger.error((String)"Couldn't load server icon", (Throwable)exception);
             }
             finally
             {
@@ -590,7 +613,6 @@ public abstract class MinecraftServer implements Runnable, ICommandSender, IThre
             }
         }
     }
-
 
     public File getDataDirectory()
     {

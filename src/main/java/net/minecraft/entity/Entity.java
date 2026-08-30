@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-
-import net.ccbluex.liquidbounce.injection.implementations.IMixinEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFence;
 import net.minecraft.block.BlockFenceGate;
@@ -48,7 +46,6 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-
 import net.ccbluex.liquidbounce.event.EventManager;
 import net.ccbluex.liquidbounce.event.RotationSetEvent;
 import net.ccbluex.liquidbounce.event.StrafeEvent;
@@ -56,10 +53,25 @@ import net.ccbluex.liquidbounce.features.module.modules.combat.HitBox;
 import net.ccbluex.liquidbounce.features.module.modules.exploit.NoPitchLimit;
 import net.ccbluex.liquidbounce.features.module.modules.movement.NoFluid;
 import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
-
+import net.ccbluex.liquidbounce.injection.implementations.IMixinEntity;
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public abstract class Entity implements ICommandSender, IMixinEntity {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinEntity.java
+    private boolean truePos;
+
+    private double trueZ;
+
+    private double trueY;
+
+    private double lerpZ;
+
+    private double lerpY;
+
+    private double lerpX;
+
+    private double trueX;
+
     private static final AxisAlignedBB ZERO_AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
     private static int nextEntityID;
     private int entityId;
@@ -135,49 +147,6 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
     protected UUID entityUniqueID;
     private final CommandResultStats cmdResultStats;
 
-    private double trueX;
-    private double lerpX;
-    private double lerpY;
-    private double lerpZ;
-
-    public double getTrueX() {
-        return trueX;
-    }
-
-    public void setTrueX(double x) {
-        trueX = x;
-    }
-
-    private double trueY;
-
-    public double getTrueY() {
-        return trueY;
-    }
-
-    public void setTrueY(double y) {
-        trueY = y;
-    }
-
-    private double trueZ;
-
-    public double getTrueZ() {
-        return trueZ;
-    }
-
-    public void setTrueZ(double z) {
-        trueZ = z;
-    }
-
-    private boolean truePos;
-
-    public boolean getTruePos() {
-        return truePos;
-    }
-
-    public void setTruePos(boolean set) {
-        truePos = set;
-    }
-
     public int getEntityId()
     {
         return this.entityId;
@@ -221,18 +190,6 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         this.dataWatcher.addObject(2, "");
         this.dataWatcher.addObject(4, Byte.valueOf((byte)0));
         this.entityInit();
-    }
-
-    public int getNextStepDistance() {
-        return nextStepDistance;
-    }
-
-    public void setNextStepDistance(int nextStepDistance) {
-        this.nextStepDistance = nextStepDistance;
-    }
-
-    public int getFire() {
-        return fire;
     }
 
     protected abstract void entityInit();
@@ -313,20 +270,20 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
     public void setAngles(float yaw, float pitch)
     {
         if ((Object) this != mc.thePlayer)
-            return;
-
-        RotationSetEvent event = new RotationSetEvent((float) (yaw * 0.15), (float) (pitch * 0.15));
-
-        EventManager.INSTANCE.call(event);
-
-        if (event.isCancelled())
-            return;
+                    return;
+        
+                RotationSetEvent event = new RotationSetEvent((float) (yaw * 0.15), (float) (pitch * 0.15));
+        
+                EventManager.INSTANCE.call(event);
+        
+                if (event.isCancelled())
+                    return;
 
         float f = this.rotationPitch;
         float f1 = this.rotationYaw;
         this.rotationYaw = (float)((double)this.rotationYaw + (double)yaw * 0.15D);
         this.rotationPitch = (float)((double)this.rotationPitch - (double)pitch * 0.15D);
-        this.rotationPitch = MathHelper.clamp_float(this.rotationPitch, -90.0F, 90.0F);
+        this.rotationPitch = setAngles(this.rotationPitch, -90.0F, 90.0F);
         this.prevRotationPitch += this.rotationPitch - f;
         this.prevRotationYaw += this.rotationYaw - f1;
     }
@@ -946,11 +903,6 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         }
     }
 
-    public AxisAlignedBB getCollisionBox(Entity entityIn)
-    {
-        return null;
-    }
-
     public AxisAlignedBB getCollisionBoundingBox()
     {
         return null;
@@ -984,7 +936,10 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
 
     public boolean isInWater()
     {
-        if (NoFluid.INSTANCE.handleEvents() && NoFluid.INSTANCE.getWaterValue()) return false;
+        if (NoFluid.INSTANCE.handleEvents() && NoFluid.INSTANCE.getWaterValue()) {
+                    return false;
+                }
+
         return this.inWater;
     }
 
@@ -1086,18 +1041,22 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
 
     public boolean isInLava()
     {
-        if (NoFluid.INSTANCE.handleEvents() && NoFluid.INSTANCE.getLavaValue()) return false;
+        if (NoFluid.INSTANCE.handleEvents() && NoFluid.INSTANCE.getLavaValue()) {
+                    return false;
+                }
+
         return this.worldObj.isMaterialInBB(this.getEntityBoundingBox().expand(-0.10000000149011612D, -0.4000000059604645D, -0.10000000149011612D), Material.lava);
     }
 
     public void moveFlying(float strafe, float forward, float friction)
     {
-        if ((Object) this != mc.thePlayer) return;
-
-        final StrafeEvent strafeEvent = new StrafeEvent(strafe, forward, friction);
-        EventManager.INSTANCE.call(strafeEvent);
-
-        if (strafeEvent.isCancelled()) return;
+        //noinspection ConstantConditions
+                if ((Object) this != mc.thePlayer) return;
+        
+                final StrafeEvent strafeEvent = new StrafeEvent(strafe, forward, friction);
+                EventManager.INSTANCE.call(strafeEvent);
+        
+                if (strafeEvent.isCancelled()) return;
 
         float f = strafe * strafe + forward * forward;
 
@@ -1315,19 +1274,17 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
 
     public Vec3 getPositionEyes(float partialTicks)
     {
-        Vec3 vec;
         if (partialTicks == 1.0F)
         {
-            vec = new Vec3(this.posX, this.posY + (double)this.getEyeHeight(), this.posZ);
+            return FreeCam.INSTANCE.modifyRaycast((new Vec3(this.posX, this.posY + (double)this.getEyeHeight(), this.posZ)), (Entity) (Object) this, partialTicks);
         }
         else
         {
             double d0 = this.prevPosX + (this.posX - this.prevPosX) * (double)partialTicks;
             double d1 = this.prevPosY + (this.posY - this.prevPosY) * (double)partialTicks + (double)this.getEyeHeight();
             double d2 = this.prevPosZ + (this.posZ - this.prevPosZ) * (double)partialTicks;
-            vec = new Vec3(d0, d1, d2);
+            return FreeCam.INSTANCE.modifyRaycast((new Vec3(d0, d1, d2)), (Entity) (Object) this, partialTicks);
         }
-        return FreeCam.INSTANCE.modifyRaycast(vec, this, partialTicks);
     }
 
     public MovingObjectPosition rayTrace(double blockReachDistance, float partialTicks)
@@ -1642,6 +1599,10 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         return false;
     }
 
+    public AxisAlignedBB getCollisionBox(Entity entityIn)
+    {
+        return null;
+    }
 
     public void updateRidden()
     {
@@ -1790,10 +1751,13 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         }
     }
 
-    public float getCollisionBorderSize() {
-        if (HitBox.INSTANCE.getState()) {
-            return 0.1F + HitBox.INSTANCE.determineSize(this);
-        }
+    public float getCollisionBorderSize()
+    {
+        final HitBox hitBox = HitBox.INSTANCE;
+        
+                if (hitBox.handleEvents())
+                    return 0.1F + hitBox.determineSize((Entity) (Object) this);
+
         return 0.1F;
     }
 
@@ -2177,10 +2141,6 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         return 3;
     }
 
-    public boolean canRiderInteract() {
-        return false;
-    }
-
     public Vec3 func_181014_aG()
     {
         return this.lastPortalVec;
@@ -2427,33 +2387,103 @@ public abstract class Entity implements ICommandSender, IMixinEntity {
         EnchantmentHelper.applyArthropodEnchantments(entityLivingBaseIn, entityIn);
     }
 
+
+    public double getTrueX() {
+        return trueX;
+    }
+
+
+    public void setTrueX(double x) {
+        trueX = x;
+    }
+
+
+    public double getTrueY() {
+        return trueY;
+    }
+
+
+    public void setTrueY(double y) {
+        trueY = y;
+    }
+
+
+    public double getTrueZ() {
+        return trueZ;
+    }
+
+
+    public void setTrueZ(double z) {
+        trueZ = z;
+    }
+
+
+    public boolean getTruePos() {
+        return truePos;
+    }
+
+
+    public void setTruePos(boolean set) {
+        truePos = set;
+    }
+
+
+    public int getNextStepDistance() {
+        return nextStepDistance;
+    }
+
+
+    public void setNextStepDistance(int nextStepDistance) {
+        this.nextStepDistance = nextStepDistance;
+    }
+
+
+    public int getFire() {
+        return fire;
+    }
+
+
+    private float setAngles(float a, float min, float max) {
+        return NoPitchLimit.INSTANCE.handleEvents() ? a : MathHelper.clamp_float(a, min, max);
+    }
+
+
     @Override
     public double getLerpX() {
         return lerpX;
     }
+
 
     @Override
     public void setLerpX(double lerpX) {
         this.lerpX = lerpX;
     }
 
+
     @Override
     public double getLerpY() {
         return lerpY;
     }
+
 
     @Override
     public void setLerpY(double lerpY) {
         this.lerpY = lerpY;
     }
 
+
     @Override
     public double getLerpZ() {
         return lerpZ;
     }
 
+
     @Override
     public void setLerpZ(double lerpZ) {
         this.lerpZ = lerpZ;
+    }
+
+    public boolean canRiderInteract() {
+        return false;
     }
 }

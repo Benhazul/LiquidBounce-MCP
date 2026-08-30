@@ -1,9 +1,6 @@
 package net.minecraft.client.renderer.entity;
 
 import java.util.Random;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.Chams;
-import net.ccbluex.liquidbounce.features.module.modules.render.ItemPhysics;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -13,14 +10,17 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import net.ccbluex.liquidbounce.LiquidBounce;
+import net.ccbluex.liquidbounce.features.module.modules.render.Chams;
+import net.ccbluex.liquidbounce.features.module.modules.render.ItemPhysics;
 import org.lwjgl.opengl.GL11;
-
 import static net.minecraft.client.renderer.GlStateManager.*;
 import static net.minecraft.util.MathHelper.sin;
 import static org.lwjgl.opengl.GL11.*;
 
 public class RenderEntityItem extends Render<EntityItem>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRenderEntityItem.java
     private final RenderItem itemRenderer;
     private Random field_177079_e = new Random();
 
@@ -32,6 +32,16 @@ public class RenderEntityItem extends Render<EntityItem>
         this.shadowOpaque = 0.75F;
     }
 
+    /**
+     * @author Eclipses
+     *
+     * @reason
+     * Original simplified code by FDPClient & Modified by Eclipses:
+     * https://github.com/SkidderMC/FDPClient/blob/main/src/main/java/net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRenderEntityItem.java
+     *
+     * Original code from:
+     * https://github.com/CreativeMD/ItemPhysic/blob/1.8.9/src/main/java/com/creativemd/itemphysic/physics/ClientPhysic.java
+     */
     private int func_177077_a(EntityItem itemIn, double x, double y, double z, float p_177077_8_, IBakedModel ibakedmodel) {
         final ItemPhysics itemPhysics = ItemPhysics.INSTANCE;
 
@@ -109,22 +119,6 @@ public class RenderEntityItem extends Render<EntityItem>
         return count;
     }
 
-    private int getItemCount(ItemStack stack) {
-        int size = stack.stackSize;
-
-        if (size > 48) {
-            return 5;
-        } else if (size > 32) {
-            return 4;
-        } else if (size > 16) {
-            return 3;
-        } else if (size > 1) {
-            return 2;
-        }
-
-        return 1;
-    }
-
     private int func_177078_a(ItemStack stack)
     {
         int i = 1;
@@ -152,11 +146,11 @@ public class RenderEntityItem extends Render<EntityItem>
     public void doRender(EntityItem entity, double x, double y, double z, float entityYaw, float partialTicks)
     {
         final Chams chams = Chams.INSTANCE;
-
-        if (chams.handleEvents() && chams.getItems()) {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1f, -1000000F);
-        }
+        
+                if (chams.handleEvents() && chams.getItems()) {
+                    glEnable(GL_POLYGON_OFFSET_FILL);
+                    glPolygonOffset(1f, -1000000F);
+                }
 
         ItemStack itemstack = entity.getEntityItem();
         this.field_177079_e.setSeed(187L);
@@ -218,16 +212,34 @@ public class RenderEntityItem extends Render<EntityItem>
             this.renderManager.renderEngine.getTexture(this.getEntityTexture(entity)).restoreLastBlurMipmap();
         }
 
-        if (chams.handleEvents() && chams.getItems()) {
-            glPolygonOffset(1f, 1000000F);
-            glDisable(GL_POLYGON_OFFSET_FILL);
-        }
-
         super.doRender(entity, x, y, z, entityYaw, partialTicks);
-    }
+    
+        final Chams chams0 = Chams.INSTANCE;
+        
+                if (chams0.handleEvents() && chams0.getItems()) {
+                    glPolygonOffset(1f, 1000000F);
+                    glDisable(GL_POLYGON_OFFSET_FILL);
+                }
+}
 
     public ResourceLocation getEntityTexture(EntityItem entity)
     {
         return TextureMap.locationBlocksTexture;
+    }
+
+    private int getItemCount(ItemStack stack) {
+        int size = stack.stackSize;
+
+        if (size > 48) {
+            return 5;
+        } else if (size > 32) {
+            return 4;
+        } else if (size > 16) {
+            return 3;
+        } else if (size > 1) {
+            return 2;
+        }
+
+        return 1;
     }
 }

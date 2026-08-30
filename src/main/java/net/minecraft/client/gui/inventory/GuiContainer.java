@@ -3,7 +3,6 @@ package net.minecraft.client.gui.inventory;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.Set;
-import java.awt.Color;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
@@ -19,8 +18,6 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.opengl.GL11;
-
 import net.ccbluex.liquidbounce.config.ColorValue;
 import net.ccbluex.liquidbounce.features.module.modules.combat.AutoArmor;
 import net.ccbluex.liquidbounce.features.module.modules.player.InventoryCleaner;
@@ -28,9 +25,18 @@ import net.ccbluex.liquidbounce.features.module.modules.world.ChestStealer;
 import net.ccbluex.liquidbounce.utils.inventory.InventoryManager;
 import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import net.ccbluex.liquidbounce.utils.timing.TickTimer;
+import org.lwjgl.opengl.GL11;
 
 public abstract class GuiContainer extends GuiScreen
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiContainer.java
+    final TickTimer tick2 = new TickTimer();
+
+    final TickTimer tick1 = new TickTimer();
+
+    // Separate TickTimer instances to avoid timing conflicts
+    final TickTimer tick0 = new TickTimer();
+
     protected static final ResourceLocation inventoryBackground = new ResourceLocation("textures/gui/container/inventory.png");
     protected int xSize = 176;
     protected int ySize = 166;
@@ -60,10 +66,6 @@ public abstract class GuiContainer extends GuiScreen
     private boolean doubleClick;
     private ItemStack shiftClickedSlot;
 
-    private final TickTimer tick0 = new TickTimer();
-    private final TickTimer tick1 = new TickTimer();
-    private final TickTimer tick2 = new TickTimer();
-
     public GuiContainer(Container inventorySlotsIn)
     {
         this.inventorySlots = inventorySlotsIn;
@@ -72,25 +74,25 @@ public abstract class GuiContainer extends GuiScreen
 
     public void initGui()
     {
-        if (ChestStealer.INSTANCE.handleEvents() && ChestStealer.INSTANCE.getSilentGUI()) {
-            if (this.mc.currentScreen instanceof GuiChest) {
-                return;
-            }
-        }
-
         super.initGui();
         this.mc.thePlayer.openContainer = this.inventorySlots;
         this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
-    }
+    
+        if (ChestStealer.INSTANCE.handleEvents() && ChestStealer.INSTANCE.getSilentGUI()) {
+                    if (mc.currentScreen instanceof GuiChest) {
+                        return;
+                    }
+                }
+}
 
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
         if (ChestStealer.INSTANCE.handleEvents() && ChestStealer.INSTANCE.getSilentGUI()) {
-            if (this.mc.currentScreen instanceof GuiChest) {
-                return;
-            }
-        }
+                    if (mc.currentScreen instanceof GuiChest) {
+                        return;
+                    }
+                }
 
         this.drawDefaultBackground();
         int i = this.guiLeft;
@@ -212,69 +214,84 @@ public abstract class GuiContainer extends GuiScreen
 
     private void drawSlot(Slot slotIn)
     {
-        final InventoryManager inventoryManager = InventoryManager.INSTANCE;
-        final ChestStealer chestStealer = ChestStealer.INSTANCE;
-        final InventoryCleaner inventoryCleaner = InventoryCleaner.INSTANCE;
-        final AutoArmor autoArmor = AutoArmor.INSTANCE;
-        final RenderUtils renderUtils = RenderUtils.INSTANCE;
-
-        int xSlot = slotIn.xDisplayPosition;
-        int ySlot = slotIn.yDisplayPosition;
-
-        GL11.glPushMatrix();
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT);
-        GL11.glDisable(GL11.GL_LIGHTING);
-
-        if (this.mc.currentScreen instanceof GuiChest) {
-            if (chestStealer.handleEvents() && !chestStealer.getSilentGUI() && chestStealer.getHighlightSlot()) {
-                int current = inventoryManager.getChestStealerCurrentSlot();
-                if (slotIn.slotNumber == current && current != -1 && current != inventoryManager.getChestStealerLastSlot()) {
-                    renderUtils.drawBorderedRect(xSlot, ySlot, xSlot + 16, ySlot + 16, chestStealer.getBorderStrength(), ((ColorValue)chestStealer.getBorderColor()).selectedColor().getRGB(), ((ColorValue)chestStealer.getBackgroundColor()).selectedColor().getRGB());
-                    if (!slotIn.getHasStack() && tick0.hasTimePassed(100)) {
-                        inventoryManager.setChestStealerLastSlot(current);
-                        tick0.reset();
-                    } else {
-                        tick0.update();
-                    }
-                }
-            }
-        }
-
-        if (this.mc.currentScreen instanceof GuiInventory) {
-            if (inventoryManager.getHighlightSlotValue().get()) {
-                int invColor = ((ColorValue)inventoryManager.getBackgroundColor()).selectedColor().getRGB();
-                int invBorder = ((ColorValue)inventoryManager.getBorderColor()).selectedColor().getRGB();
-                float strength = inventoryManager.getBorderStrength().get();
-
-                if (inventoryCleaner.handleEvents()) {
-                    int current = inventoryManager.getInvCleanerCurrentSlot();
-                    if (slotIn.slotNumber == current && current != -1 && current != inventoryManager.getInvCleanerLastSlot()) {
-                        renderUtils.drawBorderedRect(xSlot, ySlot, xSlot + 16, ySlot + 16, strength, invBorder, invColor);
-                        if (!slotIn.getHasStack() && tick1.hasTimePassed(100)) {
-                            inventoryManager.setInvCleanerLastSlot(current);
-                            tick1.reset();
-                        } else {
-                            tick1.update();
+        // Instances
+                final InventoryManager inventoryManager = InventoryManager.INSTANCE;
+                final ChestStealer chestStealer = ChestStealer.INSTANCE;
+                final InventoryCleaner inventoryCleaner = InventoryCleaner.INSTANCE;
+                final AutoArmor autoArmor = AutoArmor.INSTANCE;
+                final RenderUtils renderUtils = RenderUtils.INSTANCE;
+        
+                // Slot X/Y
+                int x = slotIn.xDisplayPosition;
+                int y = slotIn.yDisplayPosition;
+        
+                // ChestStealer Highlight Values
+                int chestStealerBackgroundColor = ((ColorValue) chestStealer.getBackgroundColor()).selectedColor().getRGB();
+                int chestStealerBorderColor = ((ColorValue) chestStealer.getBorderColor()).selectedColor().getRGB();
+        
+                // InvCleaner & AutoArmor Highlight Values
+                int invManagerBackgroundColor = ((ColorValue) inventoryManager.getBackgroundColor()).selectedColor().getRGB();
+                int invManagerBorderColor = ((ColorValue) inventoryManager.getBorderColor()).selectedColor().getRGB();
+        
+                // Get the current slotIn being stolen
+                int currentSlotChestStealer = inventoryManager.getChestStealerCurrentSlot();
+                int currentSlotInvCleaner = inventoryManager.getInvCleanerCurrentSlot();
+                int currentSlotAutoArmor = inventoryManager.getAutoArmorCurrentSlot();
+        
+                GL11.glPushMatrix();
+                GL11.glPushAttrib(GL11.GL_ENABLE_BIT);
+                GL11.glDisable(GL11.GL_LIGHTING);
+        
+                if (mc.currentScreen instanceof GuiChest) {
+                    if (chestStealer.handleEvents() && !chestStealer.getSilentGUI() && chestStealer.getHighlightSlot()) {
+                        if (slotIn.slotNumber == currentSlotChestStealer && currentSlotChestStealer != -1 && currentSlotChestStealer != inventoryManager.getChestStealerLastSlot()) {
+                            renderUtils.drawBorderedRect(x, y, x + 16, y + 16, chestStealer.getBorderStrength(), chestStealerBorderColor, chestStealerBackgroundColor);
+        
+                            // Prevent rendering the highlighted rectangle twice
+                            if (!slotIn.getHasStack() && tick0.hasTimePassed(100)) {
+                                inventoryManager.setChestStealerLastSlot(currentSlotChestStealer);
+                                tick0.reset();
+                            } else {
+                                tick0.update();
+                            }
                         }
                     }
                 }
-
-                if (autoArmor.handleEvents()) {
-                    int current = inventoryManager.getAutoArmorCurrentSlot();
-                    if (slotIn.slotNumber == current && current != -1 && current != inventoryManager.getAutoArmorLastSlot()) {
-                        renderUtils.drawBorderedRect(xSlot, ySlot, xSlot + 16, ySlot + 16, strength, invBorder, invColor);
-                        if (!slotIn.getHasStack() && tick2.hasTimePassed(100)) {
-                            inventoryManager.setAutoArmorLastSlot(current);
-                            tick2.reset();
-                        } else {
-                            tick2.update();
+        
+                if (mc.currentScreen instanceof GuiInventory) {
+                    if (inventoryManager.getHighlightSlotValue().get()) {
+                        if (inventoryCleaner.handleEvents()) {
+                            if (slotIn.slotNumber == currentSlotInvCleaner && currentSlotInvCleaner != -1 && currentSlotInvCleaner != inventoryManager.getInvCleanerLastSlot()) {
+                                renderUtils.drawBorderedRect(x, y, x + 16, y + 16, inventoryManager.getBorderStrength().get(), invManagerBorderColor, invManagerBackgroundColor);
+        
+                                // Prevent rendering the highlighted rectangle twice
+                                if (!slotIn.getHasStack() && tick1.hasTimePassed(100)) {
+                                    inventoryManager.setInvCleanerLastSlot(currentSlotInvCleaner);
+                                    tick1.reset();
+                                } else {
+                                    tick1.update();
+                                }
+                            }
+                        }
+        
+                        if (autoArmor.handleEvents()) {
+                            if (slotIn.slotNumber == currentSlotAutoArmor && currentSlotAutoArmor != -1 && currentSlotAutoArmor != inventoryManager.getAutoArmorLastSlot()) {
+                                renderUtils.drawBorderedRect(x, y, x + 16, y + 16, inventoryManager.getBorderStrength().get(), invManagerBorderColor, invManagerBackgroundColor);
+        
+                                // Prevent rendering the highlighted rectangle twice
+                                if (!slotIn.getHasStack() && tick2.hasTimePassed(100)) {
+                                    inventoryManager.setAutoArmorLastSlot(currentSlotAutoArmor);
+                                    tick2.reset();
+                                } else {
+                                    tick2.update();
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-        GL11.glPopAttrib();
-        GL11.glPopMatrix();
+        
+                GL11.glPopAttrib();
+                GL11.glPopMatrix();
 
         int i = slotIn.xDisplayPosition;
         int j = slotIn.yDisplayPosition;

@@ -2,9 +2,7 @@ package net.minecraft.client.gui;
 
 import com.google.common.collect.Lists;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.List;
-import java.awt.Color;
 import net.minecraft.network.play.client.C14PacketTabComplete;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
@@ -16,14 +14,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-
 import net.ccbluex.liquidbounce.features.command.CommandManager;
 import net.ccbluex.liquidbounce.file.FileManager;
 import net.ccbluex.liquidbounce.ui.font.AWTFontRenderer;
 import net.ccbluex.liquidbounce.utils.render.RenderUtils;
+import java.awt.*;
+import java.util.Comparator;
 
 public class GuiChat extends GuiScreen
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiChat.java
+    private float fade = 0;
+
+    private float yPosOfInputField;
+
     private static final Logger logger = LogManager.getLogger();
     private String historyBuffer = "";
     private int sentHistoryCursor = -1;
@@ -33,9 +37,6 @@ public class GuiChat extends GuiScreen
     private List<String> foundPlayerNames = Lists.<String>newArrayList();
     protected GuiTextField inputField;
     private String defaultInputFieldText = "";
-
-    private float yPosOfInputField;
-    private float fade = 0;
 
     public GuiChat()
     {
@@ -56,10 +57,10 @@ public class GuiChat extends GuiScreen
         this.inputField.setFocused(true);
         this.inputField.setText(this.defaultInputFieldText);
         this.inputField.setCanLoseFocus(false);
-
-        this.inputField.yPosition = this.height + 1;
-        this.yPosOfInputField = (float)this.inputField.yPosition;
-    }
+    
+        inputField.yPosition = height + 1;
+                yPosOfInputField = inputField.yPosition;
+}
 
     public void onGuiClosed()
     {
@@ -69,17 +70,17 @@ public class GuiChat extends GuiScreen
 
     public void updateScreen()
     {
-        this.inputField.updateCursorCounter();
-
         final int delta = RenderUtils.INSTANCE.getDeltaTime();
+        
+                if (fade < 14) fade += 0.4F * delta;
+                if (fade > 14) fade = 14;
+        
+                if (yPosOfInputField > height - 12) yPosOfInputField -= 0.4F * delta;
+                if (yPosOfInputField < height - 12) yPosOfInputField = height - 12;
+        
+                inputField.yPosition = (int) yPosOfInputField;
 
-        if (this.fade < 14.0F) this.fade += 0.4F * (float)delta;
-        if (this.fade > 14.0F) this.fade = 14.0F;
-
-        if (this.yPosOfInputField > (float)(this.height - 12)) this.yPosOfInputField -= 0.4F * (float)delta;
-        if (this.yPosOfInputField < (float)(this.height - 12)) this.yPosOfInputField = (float)(this.height - 12);
-
-        this.inputField.yPosition = (int)this.yPosOfInputField;
+        this.inputField.updateCursorCounter();
     }
 
     protected void keyTyped(char typedChar, int keyCode) throws IOException
@@ -133,15 +134,15 @@ public class GuiChat extends GuiScreen
 
             this.mc.displayGuiScreen((GuiScreen)null);
         }
-
+    
         if (!inputField.getText().startsWith(String.valueOf(CommandManager.INSTANCE.getPrefix()))) return;
-        CommandManager.INSTANCE.autoComplete(inputField.getText());
-
-        if (!inputField.getText().startsWith(CommandManager.INSTANCE.getPrefix() + "lc"))
-            inputField.setMaxStringLength(10000);
-        else
-            inputField.setMaxStringLength(100);
-    }
+                CommandManager.INSTANCE.autoComplete(inputField.getText());
+        
+                if (!inputField.getText().startsWith(CommandManager.INSTANCE.getPrefix() + "lc"))
+                    inputField.setMaxStringLength(10000);
+                else
+                    inputField.setMaxStringLength(100);
+}
 
     public void handleMouseInput() throws IOException
     {
@@ -199,6 +200,9 @@ public class GuiChat extends GuiScreen
 
     public void autocompletePlayerNames()
     {
+        foundPlayerNames.sort(
+                        Comparator.comparing(s -> !FileManager.INSTANCE.getFriendsConfig().isFriend(s)));
+
         if (this.playerNamesFound)
         {
             this.inputField.deleteFromCursor(this.inputField.func_146197_a(-1, this.inputField.getCursorPosition(), false) - this.inputField.getCursorPosition());
@@ -221,8 +225,6 @@ public class GuiChat extends GuiScreen
             {
                 return;
             }
-
-            this.foundPlayerNames.sort(Comparator.comparing(str -> !FileManager.INSTANCE.getFriendsConfig().isFriend((String)str)));
 
             this.playerNamesFound = true;
             this.inputField.deleteFromCursor(i - this.inputField.getCursorPosition());
@@ -251,17 +253,17 @@ public class GuiChat extends GuiScreen
     private void sendAutocompleteRequest(String p_146405_1_, String p_146405_2_)
     {
         if (CommandManager.INSTANCE.autoComplete(p_146405_1_)) {
-            waitingOnAutocomplete = true;
-
-            String[] latestAutoComplete = CommandManager.INSTANCE.getLatestAutoComplete();
-
-            if (p_146405_1_.toLowerCase().endsWith(latestAutoComplete[latestAutoComplete.length - 1].toLowerCase()))
-                return;
-
-            onAutocompleteResponse(latestAutoComplete);
-
-            return;
-        }
+                    waitingOnAutocomplete = true;
+        
+                    String[] latestAutoComplete = CommandManager.INSTANCE.getLatestAutoComplete();
+        
+                    if (p_146405_1_.toLowerCase().endsWith(latestAutoComplete[latestAutoComplete.length - 1].toLowerCase()))
+                        return;
+        
+                    onAutocompleteResponse(latestAutoComplete);
+        
+                    return;
+                }
 
         if (p_146405_1_.length() >= 1)
         {
@@ -303,35 +305,34 @@ public class GuiChat extends GuiScreen
         }
     }
 
-    public void drawScreen(int mouseX, int mouseY, float partialTicks)
-    {
+    /**
+     * @author CCBlueX
+     */
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         AWTFontRenderer.Companion.setAssumeNonVolatile(true);
 
-        drawRect(2, this.height - (int)this.fade, this.width - 2, this.height, Integer.MIN_VALUE);
-        this.inputField.drawTextBox();
+        Gui.drawRect(2, height - (int) fade, width - 2, height, Integer.MIN_VALUE);
+        inputField.drawTextBox();
 
-        if (CommandManager.INSTANCE.getLatestAutoComplete().length > 0 && !this.inputField.getText().isEmpty() && this.inputField.getText().startsWith(String.valueOf(CommandManager.INSTANCE.getPrefix()))) {
+        if (CommandManager.INSTANCE.getLatestAutoComplete().length > 0 && !inputField.getText().isEmpty() && inputField.getText().startsWith(String.valueOf(CommandManager.INSTANCE.getPrefix()))) {
             String[] latestAutoComplete = CommandManager.INSTANCE.getLatestAutoComplete();
-            String[] textArray = this.inputField.getText().split(" ");
+            String[] textArray = inputField.getText().split(" ");
             String trimmedString = latestAutoComplete[0].replaceFirst("(?i)" + textArray[textArray.length - 1], "");
 
-            this.mc.fontRendererObj.drawStringWithShadow(trimmedString, (float)(this.inputField.xPosition + this.mc.fontRendererObj.getStringWidth(this.inputField.getText())), (float)this.inputField.yPosition, new Color(165, 165, 165).getRGB());
+            mc.fontRendererObj.drawStringWithShadow(trimmedString, inputField.xPosition + mc.fontRendererObj.getStringWidth(inputField.getText()), inputField.yPosition, new Color(165, 165, 165).getRGB());
         }
 
         AWTFontRenderer.Companion.setAssumeNonVolatile(false);
 
-        IChatComponent ichatcomponent = this.mc.ingameGUI.getChatGUI().getChatComponent(Mouse.getX(), Mouse.getY());
+        IChatComponent ichatcomponent =
+                mc.ingameGUI.getChatGUI().getChatComponent(Mouse.getX(), Mouse.getY());
 
         if (ichatcomponent != null)
-        {
-            this.handleComponentHover(ichatcomponent, mouseX, mouseY);
-        }
+            handleComponentHover(ichatcomponent, mouseX, mouseY);
     }
 
     public void onAutocompleteResponse(String[] p_146406_1_)
     {
-        if (CommandManager.INSTANCE.getLatestAutoComplete().length != 0) return;
-
         if (this.waitingOnAutocomplete)
         {
             this.playerNamesFound = false;
@@ -356,6 +357,7 @@ public class GuiChat extends GuiScreen
             else if (this.foundPlayerNames.size() > 0)
             {
                 this.playerNamesFound = true;
+        if (CommandManager.INSTANCE.getLatestAutoComplete().length != 0) return;
                 this.autocompletePlayerNames();
             }
         }

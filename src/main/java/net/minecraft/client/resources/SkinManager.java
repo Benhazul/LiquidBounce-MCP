@@ -11,15 +11,12 @@ import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IImageBuffer;
 import net.minecraft.client.renderer.ImageBufferDownload;
@@ -27,9 +24,14 @@ import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;
+import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
+import java.util.HashMap;
+import java.util.Objects;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public class SkinManager
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/resources/MixinSkinManager.java
     private static final ExecutorService THREAD_POOL = new ThreadPoolExecutor(0, 2, 1L, TimeUnit.MINUTES, new LinkedBlockingQueue());
     private final TextureManager textureManager;
     private final File skinCacheDir;
@@ -147,23 +149,19 @@ public class SkinManager
 
     public Map<Type, MinecraftProfileTexture> loadSkinFromCache(GameProfile profile)
     {
-        if (profile != null)
-        {
-            NameProtect nameProtect = NameProtect.INSTANCE;
+        if (profile == null)
+            return Collections.emptyMap();
+        
+        NameProtect nameProtect = NameProtect.INSTANCE;
 
-            if (nameProtect.handleEvents() && nameProtect.getSkinProtect())
-            {
-                if (nameProtect.getAllPlayers()
-                        || Objects.equals(profile.getId(), Minecraft.getMinecraft().getSession().getProfile().getId()))
-                {
-                    return new HashMap<Type, MinecraftProfileTexture>();
-                }
+        if (nameProtect.handleEvents() && nameProtect.getSkinProtect()) {
+            if (nameProtect.getAllPlayers() || Objects.equals(profile.getId(), mc.getSession().getProfile().getId())) {
+                return new HashMap<>();
             }
         }
 
-        return (Map<Type, MinecraftProfileTexture>) this.skinCacheLoader.getUnchecked(profile);
+        return (Map)this.skinCacheLoader.getUnchecked(profile);
     }
-
 
     public interface SkinAvailableCallback
     {

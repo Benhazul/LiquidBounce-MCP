@@ -378,7 +378,7 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
             for (CreativeTabs creativetabs : CreativeTabs.creativeTabArray)
             {
-                if (this.func_147049_a(creativetabs, i, j))
+                if (creativetabs != null && this.func_147049_a(creativetabs, i, j))
                 {
                     return;
                 }
@@ -397,7 +397,7 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
             for (CreativeTabs creativetabs : CreativeTabs.creativeTabArray)
             {
-                if (this.func_147049_a(creativetabs, i, j))
+                if (creativetabs != null && this.func_147049_a(creativetabs, i, j))
                 {
                     this.setCurrentCreativeTab(creativetabs);
                     return;
@@ -558,7 +558,7 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
         for (CreativeTabs creativetabs : CreativeTabs.creativeTabArray)
         {
-            if (this.renderCreativeInventoryHoveringText(creativetabs, mouseX, mouseY))
+            if (creativetabs != null && this.renderCreativeInventoryHoveringText(creativetabs, mouseX, mouseY))
             {
                 break;
             }
@@ -590,7 +590,7 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
                     for (CreativeTabs creativetabs1 : CreativeTabs.creativeTabArray)
                     {
-                        if (creativetabs1.hasRelevantEnchantmentType(enchantment.type))
+                        if (creativetabs1 != null && creativetabs1.hasRelevantEnchantmentType(enchantment.type))
                         {
                             creativetabs = creativetabs1;
                             break;
@@ -634,7 +634,7 @@ public class GuiContainerCreative extends InventoryEffectRenderer
         {
             this.mc.getTextureManager().bindTexture(creativeInventoryTabs);
 
-            if (creativetabs1.getTabIndex() != selectedTabIndex)
+            if (creativetabs1 != null && creativetabs1.getTabIndex() != selectedTabIndex)
             {
                 this.func_147051_a(creativetabs1);
             }
@@ -664,6 +664,11 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
     protected boolean func_147049_a(CreativeTabs p_147049_1_, int p_147049_2_, int p_147049_3_)
     {
+        if (p_147049_1_ == null)
+        {
+            return false;
+        }
+
         int i = p_147049_1_.getTabColumn();
         int j = 28 * i;
         int k = 0;
@@ -691,6 +696,11 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
     protected boolean renderCreativeInventoryHoveringText(CreativeTabs p_147052_1_, int p_147052_2_, int p_147052_3_)
     {
+        if (p_147052_1_ == null)
+        {
+            return false;
+        }
+
         int i = p_147052_1_.getTabColumn();
         int j = 28 * i;
         int k = 0;
@@ -726,6 +736,11 @@ public class GuiContainerCreative extends InventoryEffectRenderer
 
     protected void func_147051_a(CreativeTabs p_147051_1_)
     {
+        if (p_147051_1_ == null)
+        {
+            return;
+        }
+
         boolean flag = p_147051_1_.getTabIndex() == selectedTabIndex;
         boolean flag1 = p_147051_1_.isTabInFirstRow();
         int i = p_147051_1_.getTabColumn();

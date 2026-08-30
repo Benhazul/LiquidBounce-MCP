@@ -41,6 +41,7 @@ import net.minecraft.network.play.client.C0APacketAnimation
 import net.minecraft.network.play.client.C0BPacketEntityAction
 import net.minecraft.util.*
 import net.minecraft.world.WorldSettings
+import net.minecraftforge.event.ForgeEventFactory
 import org.lwjgl.input.Keyboard
 import java.awt.Color
 import kotlin.math.*
@@ -1083,6 +1084,7 @@ object Scaffold : Module("Scaffold", Category.WORLD, Keyboard.KEY_I) {
 
             if (stack.stackSize <= 0) {
                 thePlayer.inventory.mainInventory[SilentHotbar.currentSlot] = null
+                ForgeEventFactory.onPlayerDestroyItem(thePlayer, stack)
             } else if (stack.stackSize != prevSize || mc.playerController.isInCreativeMode) mc.entityRenderer.itemRenderer.resetEquippedProgress()
 
             placeRotation = null

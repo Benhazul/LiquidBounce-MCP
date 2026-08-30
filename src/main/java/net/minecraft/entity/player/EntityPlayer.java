@@ -6,7 +6,6 @@ import com.mojang.authlib.GameProfile;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.Objects;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.BlockDirectional;
@@ -45,7 +44,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
@@ -76,18 +74,23 @@ import net.minecraft.world.IInteractionObject;
 import net.minecraft.world.LockCode;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
-import net.minecraft.client.Minecraft;
-
 import net.ccbluex.liquidbounce.features.module.modules.combat.KeepSprint;
 import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
 import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
 import net.ccbluex.liquidbounce.utils.attack.CooldownHelper;
 import net.ccbluex.liquidbounce.utils.client.ClassUtils;
 import net.ccbluex.liquidbounce.utils.movement.MovementUtils;
+import net.minecraft.item.ItemSword;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 @SuppressWarnings("incomplete-switch")
 public abstract class EntityPlayer extends EntityLivingBase
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinEntityPlayer.java
+    private int cooldownStackSlot;
+
+    private ItemStack cooldownStack;
+
     public InventoryPlayer inventory = new InventoryPlayer(this);
     private InventoryEnderChest theInventoryEnderChest = new InventoryEnderChest();
     public Container inventoryContainer;
@@ -107,8 +110,8 @@ public abstract class EntityPlayer extends EntityLivingBase
     public BlockPos playerLocation;
     public int sleepTimer;
     public float renderOffsetX;
-    public float renderOffsetZ;
     public float renderOffsetY;
+    public float renderOffsetZ;
     private BlockPos spawnChunk;
     private boolean spawnForced;
     private BlockPos startMinecartRidingCoordinate;
@@ -125,9 +128,6 @@ public abstract class EntityPlayer extends EntityLivingBase
     private final GameProfile gameProfile;
     private boolean hasReducedDebug = false;
     public EntityFishHook fishEntity;
-
-    private ItemStack cooldownStack;
-    private int cooldownStackSlot;
 
     public EntityPlayer(World worldIn, GameProfile gameProfileIn)
     {
@@ -168,9 +168,9 @@ public abstract class EntityPlayer extends EntityLivingBase
         final KillAura killAura = KillAura.INSTANCE;
         final NoSlow noSlow = NoSlow.INSTANCE;
 
-        if ((Object) this == Minecraft.getMinecraft().thePlayer) {
-            ItemStack stack = Minecraft.getMinecraft().thePlayer.getHeldItem();
-            if (this.itemInUseCount <= 0 && ClassUtils.INSTANCE.hasClass("com.orangemarshall.animations.BlockhitAnimation") && stack != null) {
+        if ((Object) this == mc.thePlayer) {
+            ItemStack stack = mc.thePlayer.getHeldItem();
+            if (itemInUseCount <= 0 && ClassUtils.INSTANCE.hasClass("com.orangemarshall.animations.BlockhitAnimation") && stack != null) {
                 boolean isForceBlocking = (stack.getItem() instanceof ItemSword && !killAura.getAutoBlock().equals("Off") &&
                         (killAura.getRenderBlocking() || killAura.getTarget() != null && (killAura.getBlinkAutoBlock() || killAura.getForceBlockRender()))
                         || noSlow.isUNCPBlocking());
@@ -180,6 +180,7 @@ public abstract class EntityPlayer extends EntityLivingBase
                 }
             }
         }
+
         return this.itemInUseCount;
     }
 
@@ -288,18 +289,6 @@ public abstract class EntityPlayer extends EntityLivingBase
 
         super.onUpdate();
 
-        if (this.getGameProfile() == Minecraft.getMinecraft().thePlayer.getGameProfile()) {
-            CooldownHelper.INSTANCE.incrementLastAttackedTicks();
-            CooldownHelper.INSTANCE.updateGenericAttackSpeed(getHeldItem());
-
-            if (cooldownStackSlot != inventory.currentItem || !ItemStack.areItemStacksEqual(cooldownStack, getHeldItem())) {
-                CooldownHelper.INSTANCE.resetLastAttackedTicks();
-            }
-
-            cooldownStack = getHeldItem();
-            cooldownStackSlot = inventory.currentItem;
-        }
-
         if (!this.worldObj.isRemote && this.openContainer != null && !this.openContainer.canInteractWith(this))
         {
             this.closeScreen();
@@ -377,7 +366,19 @@ public abstract class EntityPlayer extends EntityLivingBase
         {
             this.setPosition(d3, this.posY, d4);
         }
-    }
+    
+        if (getGameProfile() == mc.thePlayer.getGameProfile()) {
+                    CooldownHelper.INSTANCE.incrementLastAttackedTicks();
+                    CooldownHelper.INSTANCE.updateGenericAttackSpeed(getHeldItem());
+        
+                    if (cooldownStackSlot != inventory.currentItem || !ItemStack.areItemStacksEqual(cooldownStack, getHeldItem())) {
+                        CooldownHelper.INSTANCE.resetLastAttackedTicks();
+                    }
+        
+                    cooldownStack = getHeldItem();
+                    cooldownStackSlot = inventory.currentItem;
+                }
+}
 
     public int getMaxInPortalTime()
     {
@@ -1218,8 +1219,8 @@ public abstract class EntityPlayer extends EntityLivingBase
                     double d2 = targetEntity.motionZ;
 
                     Boolean sprint = MovementUtils.INSTANCE.getAffectSprintOnAttack();
-                    if (sprint != null && sprint && !this.isSprinting())
-                    {
+
+                    if (sprint != null && sprint && !this.isSprinting()) {
                         i++;
                     }
 
@@ -1230,26 +1231,9 @@ public abstract class EntityPlayer extends EntityLivingBase
                         if (i > 0)
                         {
                             targetEntity.addVelocity((double)(-MathHelper.sin(this.rotationYaw * (float)Math.PI / 180.0F) * (float)i * 0.5F), 0.1D, (double)(MathHelper.cos(this.rotationYaw * (float)Math.PI / 180.0F) * (float)i * 0.5F));
-
-                            double slowdown = 0.6D;
-                            if (KeepSprint.INSTANCE.handleEvents() && this.isSprinting())
-                            {
-                                slowdown = KeepSprint.INSTANCE.getMotionAfterAttack();
-                            }
-                            this.motionX *= slowdown;
-                            this.motionZ *= slowdown;
-
-                            boolean setTo = false;
-                            boolean keepSprint = Boolean.FALSE.equals(MovementUtils.INSTANCE.getAffectSprintOnAttack());
-                            if (!KeepSprint.INSTANCE.handleEvents() && !keepSprint)
-                            {
-                                this.setSprinting(setTo);
-                            }
-                            if (keepSprint && !KeepSprint.INSTANCE.handleEvents() && this.isSprinting())
-                            {
-                                this.motionX /= 0.6;
-                                this.motionZ /= 0.6;
-                            }
+                            this.motionX *= KeepSprint.INSTANCE.handleEvents() && this.isSprinting() ? KeepSprint.INSTANCE.getMotionAfterAttack() : 0.6D;
+                            this.motionZ *= KeepSprint.INSTANCE.handleEvents() && this.isSprinting() ? KeepSprint.INSTANCE.getMotionAfterAttack() : 0.6D;
+                            injectKeepSprintB(this, false);
                         }
 
                         if (targetEntity instanceof EntityPlayerMP && targetEntity.velocityChanged)
@@ -2261,5 +2245,20 @@ public abstract class EntityPlayer extends EntityLivingBase
         TOO_FAR_AWAY,
         OTHER_PROBLEM,
         NOT_SAFE;
+    }
+    
+    private void injectKeepSprintB(EntityPlayer instance, boolean sprint) {
+        boolean keepSprint = Boolean.FALSE.equals(MovementUtils.INSTANCE.getAffectSprintOnAttack());
+
+        if (!KeepSprint.INSTANCE.handleEvents() && !keepSprint) {
+            instance.setSprinting(sprint);
+        }
+
+        // Only affect motion when sprinting. Knock-back modifier factor is ignored.
+        if (keepSprint && !KeepSprint.INSTANCE.handleEvents() && isSprinting()) {
+            // Reverse the motion effects done by sprinting
+            motionX /= 0.6;
+            motionZ /= 0.6;
+        }
     }
 }

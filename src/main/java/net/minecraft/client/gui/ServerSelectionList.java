@@ -8,6 +8,7 @@ import net.minecraft.client.network.LanServerDetector;
 
 public class ServerSelectionList extends GuiListExtended
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinServerSelectionList.java
     private final GuiMultiplayer owner;
     private final List<ServerListEntryNormal> serverListInternet = Lists.<ServerListEntryNormal>newArrayList();
     private final List<ServerListEntryLanDetected> serverListLan = Lists.<ServerListEntryLanDetected>newArrayList();
@@ -84,7 +85,7 @@ public class ServerSelectionList extends GuiListExtended
 
     protected int getScrollBarX()
     {
-        return this.width - 5;
+        return super.getScrollBarX() + 30;
     }
 
     public int getListWidth()

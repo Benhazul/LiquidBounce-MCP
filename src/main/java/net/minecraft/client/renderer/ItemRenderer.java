@@ -1,9 +1,5 @@
 package net.minecraft.client.renderer;
 
-import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
-import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
-import net.ccbluex.liquidbounce.features.module.modules.render.*;
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -21,7 +17,10 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
-import net.minecraft.item.*;
+import net.minecraft.item.EnumAction;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemMap;
+import net.minecraft.item.ItemStack;
 import net.minecraft.src.Config;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumWorldBlockLayer;
@@ -32,14 +31,22 @@ import net.optifine.DynamicLights;
 import net.optifine.reflect.Reflector;
 import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
-
+import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
+import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
+import net.ccbluex.liquidbounce.features.module.modules.render.Animation;
+import net.ccbluex.liquidbounce.features.module.modules.render.Animations;
+import net.ccbluex.liquidbounce.features.module.modules.render.AntiBlind;
+import net.ccbluex.liquidbounce.features.module.modules.render.SilentHotbarModule;
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.ItemSword;
 import static net.minecraft.client.renderer.GlStateManager.*;
-import static net.minecraft.client.renderer.GlStateManager.disableRescaleNormal;
-import static net.minecraft.client.renderer.GlStateManager.popMatrix;
-import static net.minecraft.client.renderer.GlStateManager.rotate;
+import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
 
 public class ItemRenderer
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinItemRenderer.java
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/item/MixinItemRenderer.java
     private static final ResourceLocation RES_MAP_BACKGROUND = new ResourceLocation("textures/map/map_background.png");
     private static final ResourceLocation RES_UNDERWATER_OVERLAY = new ResourceLocation("textures/misc/underwater.png");
     private final Minecraft mc;
@@ -312,6 +319,9 @@ public class ItemRenderer
         GlStateManager.rotate(60.0F, 0.0F, 1.0F, 0.0F);
     }
 
+    /**
+     * @author CCBlueX
+     */
     public void renderItemInFirstPerson(float partialTicks) {
         final KillAura killAura = KillAura.INSTANCE;
         final NoSlow noSlow = NoSlow.INSTANCE;
@@ -401,8 +411,7 @@ public class ItemRenderer
     {
         GlStateManager.disableAlpha();
 
-        if (!FreeCam.INSTANCE.handleEvents()
-                && this.mc.thePlayer.isEntityInsideOpaqueBlock())
+        if (injectFreeCam(this.mc.thePlayer))
         {
             IBlockState iblockstate = this.mc.theWorld.getBlockState(new BlockPos(this.mc.thePlayer));
             BlockPos blockpos = new BlockPos(this.mc.thePlayer);
@@ -513,13 +522,7 @@ public class ItemRenderer
     {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        final AntiBlind antiBlind = AntiBlind.INSTANCE;
-
-        if (0.9F != 1.0F && antiBlind.handleEvents()) {
-            GlStateManager.color(1.0F, 1.0F, 1.0F, antiBlind.getFireEffect());
-        } else {
-            GlStateManager.color(1.0F, 1.0F, 1.0F, 0.9F);
-        }
+        renderFireInFirstPerson(1.0F, 1.0F, 1.0F, 0.9F);
         GlStateManager.depthFunc(519);
         GlStateManager.depthMask(false);
         GlStateManager.enableBlend();
@@ -552,7 +555,7 @@ public class ItemRenderer
             GlStateManager.popMatrix();
         }
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        renderFireInFirstPerson(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableBlend();
         GlStateManager.depthMask(true);
         GlStateManager.depthFunc(515);
@@ -562,14 +565,7 @@ public class ItemRenderer
     {
         this.prevEquippedProgress = this.equippedProgress;
         EntityPlayer entityplayer = this.mc.thePlayer;
-        SilentHotbarModule module = SilentHotbarModule.INSTANCE;
-
-        int slot = SilentHotbar.INSTANCE.renderSlot(
-                module.handleEvents() && module.getKeepItemInHandInFirstPerson()
-        );
-
-        ItemStack itemstack = entityplayer.inventory.getStackInSlot(slot);
-
+        ItemStack itemstack = hookSilentHotbar(entityplayer.inventory);
         boolean flag = false;
 
         if (this.itemToRender != null && itemstack != null)
@@ -625,5 +621,29 @@ public class ItemRenderer
     public void resetEquippedProgress2()
     {
         this.equippedProgress = 0.0F;
+    }
+
+
+    private void renderFireInFirstPerson(float p_color_0_, float p_color_1_, float p_color_2_, float p_color_3_) {
+        final AntiBlind antiBlind = AntiBlind.INSTANCE;
+        if (p_color_3_ != 1F && antiBlind.handleEvents()) {
+            GlStateManager.color(p_color_0_, p_color_1_, p_color_2_, antiBlind.getFireEffect());
+        } else {
+            GlStateManager.color(p_color_0_, p_color_1_, p_color_2_, p_color_3_);
+        }
+    }
+
+
+    private ItemStack hookSilentHotbar(InventoryPlayer instance) {
+        SilentHotbarModule module = SilentHotbarModule.INSTANCE;
+
+        int slot = SilentHotbar.INSTANCE.renderSlot(module.handleEvents() && module.getKeepItemInHandInFirstPerson());
+
+        return instance.getStackInSlot(slot);
+    }
+
+
+    private boolean injectFreeCam(EntityPlayerSP instance) {
+        return !FreeCam.INSTANCE.handleEvents() && instance.isEntityInsideOpaqueBlock();
     }
 }

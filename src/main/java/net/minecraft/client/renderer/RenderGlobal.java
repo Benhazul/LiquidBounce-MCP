@@ -19,10 +19,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
-import net.ccbluex.liquidbounce.injection.implementations.IMixinEntity;
-import net.ccbluex.liquidbounce.utils.client.PacketUtilsKt;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockChest;
 import net.minecraft.block.BlockEnderChest;
@@ -119,9 +115,13 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import net.ccbluex.liquidbounce.features.module.modules.render.FreeCam;
+import net.ccbluex.liquidbounce.injection.implementations.IMixinEntity;
+import net.ccbluex.liquidbounce.utils.client.PacketUtilsKt;
 
 public class RenderGlobal implements IWorldAccess, IResourceManagerReloadListener
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRenderGlobal.java
     private static final Logger logger = LogManager.getLogger();
     private static final ResourceLocation locationMoonPhasesPng = new ResourceLocation("textures/environment/moon_phases.png");
     private static final ResourceLocation locationSunPng = new ResourceLocation("textures/environment/sun.png");
@@ -702,11 +702,7 @@ public class RenderGlobal implements IWorldAccess, IResourceManagerReloadListene
                 for (int k = 0; k < list.size(); ++k)
                 {
                     Entity entity3 = (Entity)list.get(k);
-                    boolean flag2 =
-                            this.mc.getRenderViewEntity() instanceof EntityLivingBase
-                                    && FreeCam.INSTANCE.renderPlayerFromAllPerspectives(
-                                    (EntityLivingBase) this.mc.getRenderViewEntity()
-                            );
+                    boolean flag2 = this.mc.getRenderViewEntity() instanceof EntityLivingBase && this.injectFreeCam((EntityLivingBase)this.mc.getRenderViewEntity());
                     boolean flag3 = entity3.isInRangeToRender3d(d0, d1, d2) && (entity3.ignoreFrustumCheck || camera.isBoundingBoxInFrustum(entity3.getEntityBoundingBox()) || entity3.riddenByEntity == this.mc.thePlayer) && entity3 instanceof EntityPlayer;
 
                     if ((entity3 != this.mc.getRenderViewEntity() || this.mc.gameSettings.thirdPersonView != 0 || flag2) && flag3)
@@ -770,33 +766,14 @@ public class RenderGlobal implements IWorldAccess, IResourceManagerReloadListene
 
                             if (!flag || Reflector.callBoolean(entity2, Reflector.ForgeEntity_shouldRenderInPass, new Object[] {Integer.valueOf(i)}))
                             {
-                                boolean shouldRender;
-
-                                if (entity2 instanceof EntityLivingBase) {
-                                    IMixinEntity iEntity = (IMixinEntity) entity2;
-
-                                    if (iEntity.getTruePos()) {
-                                        PacketUtilsKt.interpolatePosition(iEntity);
-                                    }
-                                }
-
-                                shouldRender =
-                                        FreeCam.INSTANCE.handleEvents()
-                                                || this.renderManager.shouldRender(entity2, camera, d0, d1, d2);
-
-                                flag4 = shouldRender || entity2.riddenByEntity == this.mc.thePlayer;
+                                flag4 = injectFreeCamB(this.renderManager, entity2, camera, d0, d1, d2) || entity2.riddenByEntity == this.mc.thePlayer;
 
                                 if (!flag4)
                                 {
                                     break;
                                 }
 
-                                boolean flag5 =
-                                        this.mc.getRenderViewEntity() instanceof EntityLivingBase
-                                                ? FreeCam.INSTANCE.renderPlayerFromAllPerspectives(
-                                                (EntityLivingBase) this.mc.getRenderViewEntity()
-                                        )
-                                                : false;
+                                boolean flag5 = this.mc.getRenderViewEntity() instanceof EntityLivingBase ? this.injectFreeCam((EntityLivingBase)this.mc.getRenderViewEntity()) : false;
 
                                 if ((entity2 != this.mc.getRenderViewEntity() || flag8 || this.mc.gameSettings.thirdPersonView != 0 || flag5) && (entity2.posY < 0.0D || entity2.posY >= 256.0D || this.theWorld.isBlockLoaded(new BlockPos(entity2))))
                                 {
@@ -3377,5 +3354,23 @@ public class RenderGlobal implements IWorldAccess, IResourceManagerReloadListene
             this.facing = p_initialize_1_;
             this.setFacing = p_initialize_2_;
         }
+    }
+
+
+    private boolean injectFreeCam(EntityLivingBase instance) {
+        return FreeCam.INSTANCE.renderPlayerFromAllPerspectives(instance);
+    }
+
+
+    private boolean injectFreeCamB(RenderManager instance, Entity entity, ICamera camera, double x, double y, double z) {
+        if (entity instanceof EntityLivingBase) {
+            IMixinEntity iEntity = (IMixinEntity) entity;
+
+            if (iEntity.getTruePos()) {
+                PacketUtilsKt.interpolatePosition(iEntity);
+            }
+        }
+
+        return FreeCam.INSTANCE.handleEvents() || instance.shouldRender(entity, camera, x, y, z);
     }
 }

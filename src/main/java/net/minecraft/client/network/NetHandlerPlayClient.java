@@ -7,30 +7,12 @@ import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.Map.Entry;
-
-import net.ccbluex.liquidbounce.event.EntityMovementEvent;
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.features.module.modules.exploit.AntiExploit;
-import net.ccbluex.liquidbounce.features.module.modules.misc.NoRotateSet;
-import net.ccbluex.liquidbounce.features.module.modules.player.Blink;
-import net.ccbluex.liquidbounce.features.special.ClientFixes;
-import net.ccbluex.liquidbounce.ui.client.GuiMainMenu;
-import net.ccbluex.liquidbounce.ui.client.hud.HUD;
-import net.ccbluex.liquidbounce.ui.client.hud.element.elements.Notification;
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
-import net.ccbluex.liquidbounce.utils.client.PacketUtils;
-import net.ccbluex.liquidbounce.utils.extensions.PlayerExtensionKt;
-import net.ccbluex.liquidbounce.utils.kotlin.RandomUtils;
-import net.ccbluex.liquidbounce.utils.rotation.Rotation;
-import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
 import net.minecraft.block.Block;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.Minecraft;
@@ -40,6 +22,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiDownloadTerrain;
+import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiMerchant;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiScreen;
@@ -228,11 +211,30 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.MapData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import net.ccbluex.liquidbounce.event.EntityMovementEvent;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.features.module.modules.exploit.AntiExploit;
+import net.ccbluex.liquidbounce.features.module.modules.misc.NoRotateSet;
+import net.ccbluex.liquidbounce.features.module.modules.player.Blink;
+import net.ccbluex.liquidbounce.features.special.ClientFixes;
+import net.ccbluex.liquidbounce.ui.client.hud.HUD;
+import net.ccbluex.liquidbounce.ui.client.hud.element.elements.Notification;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
+import net.ccbluex.liquidbounce.utils.client.PacketUtils;
+import net.ccbluex.liquidbounce.utils.rotation.Rotation;
+import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
+import net.ccbluex.liquidbounce.utils.extensions.PlayerExtensionKt;
+import net.ccbluex.liquidbounce.utils.kotlin.RandomUtils;
+import net.minecraft.network.play.server.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import static net.ccbluex.liquidbounce.utils.client.ClientUtilsKt.chat;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
+import static net.minecraft.network.play.client.C19PacketResourcePackStatus.Action.FAILED_DOWNLOAD;
 
 public class NetHandlerPlayClient implements INetHandlerPlayClient
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/network/MixinNetHandlerPlayClient.java
     private static final Logger logger = LogManager.getLogger();
     private final NetworkManager netManager;
     private final GameProfile profile;
@@ -260,52 +262,9 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
 
     public void handleJoinGame(S01PacketJoinGame packetIn)
     {
-        if (ClientFixes.INSTANCE.getFmlFixesEnabled()
-                && ClientFixes.INSTANCE.getBlockFML()
-                && !this.gameController.isIntegratedServerRunning())
-        {
-            PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
-            this.gameController.playerController = new PlayerControllerMP(this.gameController, this);
-            this.clientWorldController = new WorldClient(
-                    this,
-                    new WorldSettings(
-                            0L,
-                            packetIn.getGameType(),
-                            false,
-                            packetIn.isHardcoreMode(),
-                            packetIn.getWorldType()
-                    ),
-                    packetIn.getDimension(),
-                    packetIn.getDifficulty(),
-                    this.gameController.mcProfiler
-            );
-
-            this.gameController.gameSettings.difficulty = packetIn.getDifficulty();
-            this.gameController.loadWorld(this.clientWorldController);
-            this.gameController.thePlayer.dimension = packetIn.getDimension();
-            this.gameController.displayGuiScreen(new GuiDownloadTerrain(this));
-            this.gameController.thePlayer.setEntityId(packetIn.getEntityId());
-            this.currentServerMaxPlayers = packetIn.getMaxPlayers();
-            this.gameController.thePlayer.setReducedDebug(packetIn.isReducedDebugInfo());
-            this.gameController.playerController.setGameType(packetIn.getGameType());
-            this.gameController.gameSettings.sendSettingsToServer();
-
-            this.netManager.sendPacket(
-                    new C17PacketCustomPayload(
-                            "MC|Brand",
-                            new PacketBuffer(Unpooled.buffer())
-                                    .writeString(ClientBrandRetriever.getClientModName())
-                    )
-            );
-
-            return;
-        }
-
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
         this.gameController.playerController = new PlayerControllerMP(this.gameController, this);
-        this.clientWorldController = new WorldClient(this,
-                new WorldSettings(0L, packetIn.getGameType(), false, packetIn.isHardcoreMode(), packetIn.getWorldType()),
-                packetIn.getDimension(), packetIn.getDifficulty(), this.gameController.mcProfiler);
+        this.clientWorldController = new WorldClient(this, new WorldSettings(0L, packetIn.getGameType(), false, packetIn.isHardcoreMode(), packetIn.getWorldType()), packetIn.getDimension(), packetIn.getDifficulty(), this.gameController.mcProfiler);
         this.gameController.gameSettings.difficulty = packetIn.getDifficulty();
         this.gameController.loadWorld(this.clientWorldController);
         this.gameController.thePlayer.dimension = packetIn.getDimension();
@@ -315,71 +274,22 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         this.gameController.thePlayer.setReducedDebug(packetIn.isReducedDebugInfo());
         this.gameController.playerController.setGameType(packetIn.getGameType());
         this.gameController.gameSettings.sendSettingsToServer();
-        this.netManager.sendPacket(new C17PacketCustomPayload(
-                "MC|Brand",
-                new PacketBuffer(Unpooled.buffer())
-                        .writeString(ClientBrandRetriever.getClientModName())
-        ));
+        this.netManager.sendPacket(new C17PacketCustomPayload("MC|Brand", (new PacketBuffer(Unpooled.buffer())).writeString(ClientBrandRetriever.getClientModName())));
     }
 
-    public void handleSpawnObject(S0EPacketSpawnObject packetIn) {
+    public void handleSpawnObject(S0EPacketSpawnObject packetIn)
+    {
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
-        int type = packetIn.getType();
-
-        AntiExploit module = AntiExploit.INSTANCE;
-
-        if (module.handleEvents() && module.getLimitedEntitySpawn()) {
-
-            if (type == 60) {
-                int arrows = module.getArrowMax();
-                module.setArrowMax(arrows + 1);
-
-                if (arrows >= module.getMaxArrowsSpawned()) {
-                    if (module.getWarn().equals("Chat")) {
-                        chat("Limited too many arrows spawned");
-                    } else if (module.getWarn().equals("Notification")) {
-                        HUD.INSTANCE.addNotification(
-                                Notification.Companion.informative(
-                                        module,
-                                        "Limited too many arrows spawned",
-                                        1000L
-                                )
-                        );
-                    }
-                    return;
-                }
-            }
-
-            if (type == 2) {
-                int items = module.getItemMax();
-                module.setItemMax(items + 1);
-
-                if (items >= module.getMaxItemDropped()) {
-                    if (module.getWarn().equals("Chat")) {
-                        chat("Limited too many items dropped");
-                    } else if (module.getWarn().equals("Notification")) {
-                        HUD.INSTANCE.addNotification(
-                                Notification.Companion.informative(
-                                        module,
-                                        "Limited too many items dropped",
-                                        1000L
-                                )
-                        );
-                    }
-                    return;
-                }
-            }
-        }
         double d0 = (double)packetIn.getX() / 32.0D;
         double d1 = (double)packetIn.getY() / 32.0D;
         double d2 = (double)packetIn.getZ() / 32.0D;
         Entity entity = null;
 
-        if (packetIn.getType() == 10)
+        if (onSpawnObjectType(packetIn) == 10)
         {
             entity = EntityMinecart.getMinecart(this.clientWorldController, d0, d1, d2, EntityMinecart.EnumMinecartType.byNetworkID(packetIn.func_149009_m()));
         }
-        else if (packetIn.getType() == 90)
+        else if (onSpawnObjectType(packetIn) == 90)
         {
             Entity entity1 = this.clientWorldController.getEntityByID(packetIn.func_149009_m());
 
@@ -390,86 +300,86 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
 
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 60)
+        else if (onSpawnObjectType(packetIn) == 60)
         {
             entity = new EntityArrow(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 61)
+        else if (onSpawnObjectType(packetIn) == 61)
         {
             entity = new EntitySnowball(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 71)
+        else if (onSpawnObjectType(packetIn) == 71)
         {
             entity = new EntityItemFrame(this.clientWorldController, new BlockPos(MathHelper.floor_double(d0), MathHelper.floor_double(d1), MathHelper.floor_double(d2)), EnumFacing.getHorizontal(packetIn.func_149009_m()));
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 77)
+        else if (onSpawnObjectType(packetIn) == 77)
         {
             entity = new EntityLeashKnot(this.clientWorldController, new BlockPos(MathHelper.floor_double(d0), MathHelper.floor_double(d1), MathHelper.floor_double(d2)));
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 65)
+        else if (onSpawnObjectType(packetIn) == 65)
         {
             entity = new EntityEnderPearl(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 72)
+        else if (onSpawnObjectType(packetIn) == 72)
         {
             entity = new EntityEnderEye(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 76)
+        else if (onSpawnObjectType(packetIn) == 76)
         {
             entity = new EntityFireworkRocket(this.clientWorldController, d0, d1, d2, (ItemStack)null);
         }
-        else if (packetIn.getType() == 63)
+        else if (onSpawnObjectType(packetIn) == 63)
         {
             entity = new EntityLargeFireball(this.clientWorldController, d0, d1, d2, (double)packetIn.getSpeedX() / 8000.0D, (double)packetIn.getSpeedY() / 8000.0D, (double)packetIn.getSpeedZ() / 8000.0D);
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 64)
+        else if (onSpawnObjectType(packetIn) == 64)
         {
             entity = new EntitySmallFireball(this.clientWorldController, d0, d1, d2, (double)packetIn.getSpeedX() / 8000.0D, (double)packetIn.getSpeedY() / 8000.0D, (double)packetIn.getSpeedZ() / 8000.0D);
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 66)
+        else if (onSpawnObjectType(packetIn) == 66)
         {
             entity = new EntityWitherSkull(this.clientWorldController, d0, d1, d2, (double)packetIn.getSpeedX() / 8000.0D, (double)packetIn.getSpeedY() / 8000.0D, (double)packetIn.getSpeedZ() / 8000.0D);
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 62)
+        else if (onSpawnObjectType(packetIn) == 62)
         {
             entity = new EntityEgg(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 73)
+        else if (onSpawnObjectType(packetIn) == 73)
         {
             entity = new EntityPotion(this.clientWorldController, d0, d1, d2, packetIn.func_149009_m());
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 75)
+        else if (onSpawnObjectType(packetIn) == 75)
         {
             entity = new EntityExpBottle(this.clientWorldController, d0, d1, d2);
             packetIn.func_149002_g(0);
         }
-        else if (packetIn.getType() == 1)
+        else if (onSpawnObjectType(packetIn) == 1)
         {
             entity = new EntityBoat(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 50)
+        else if (onSpawnObjectType(packetIn) == 50)
         {
             entity = new EntityTNTPrimed(this.clientWorldController, d0, d1, d2, (EntityLivingBase)null);
         }
-        else if (packetIn.getType() == 78)
+        else if (onSpawnObjectType(packetIn) == 78)
         {
             entity = new EntityArmorStand(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 51)
+        else if (onSpawnObjectType(packetIn) == 51)
         {
             entity = new EntityEnderCrystal(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 2)
+        else if (onSpawnObjectType(packetIn) == 2)
         {
             entity = new EntityItem(this.clientWorldController, d0, d1, d2);
         }
-        else if (packetIn.getType() == 70)
+        else if (onSpawnObjectType(packetIn) == 70)
         {
             entity = new EntityFallingBlock(this.clientWorldController, d0, d1, d2, Block.getStateById(packetIn.func_149009_m() & 65535));
             packetIn.func_149002_g(0);
@@ -499,7 +409,7 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
 
             if (packetIn.func_149009_m() > 0)
             {
-                if (packetIn.getType() == 60)
+                if (onSpawnObjectType(packetIn) == 60)
                 {
                     Entity entity2 = this.clientWorldController.getEntityByID(packetIn.func_149009_m());
 
@@ -663,23 +573,16 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
             entity.serverPosX += packetIn.func_149062_c();
             entity.serverPosY += packetIn.func_149061_d();
             entity.serverPosZ += packetIn.func_149064_e();
-
             double d0 = (double)entity.serverPosX / 32.0D;
             double d1 = (double)entity.serverPosY / 32.0D;
             double d2 = (double)entity.serverPosZ / 32.0D;
-
-            float f = packetIn.func_149060_h()
-                    ? (float)(packetIn.func_149066_f() * 360) / 256.0F
-                    : entity.rotationYaw;
-
-            float f1 = packetIn.func_149060_h()
-                    ? (float)(packetIn.func_149063_g() * 360) / 256.0F
-                    : entity.rotationPitch;
-
+            float f = packetIn.func_149060_h() ? (float)(packetIn.func_149066_f() * 360) / 256.0F : entity.rotationYaw;
+            float f1 = packetIn.func_149060_h() ? (float)(packetIn.func_149063_g() * 360) / 256.0F : entity.rotationPitch;
             entity.setPositionAndRotation2(d0, d1, d2, f, f1, 3, false);
-
-            EventManager.INSTANCE.call(new EntityMovementEvent(entity));
-
+        final Entity entity0 = packetIn.getEntity(clientWorldController);
+        
+                if (entity0 != null)
+                    EventManager.INSTANCE.call(new EntityMovementEvent(entity0));
             entity.onGround = packetIn.getOnGround();
         }
     }
@@ -754,46 +657,11 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         }
 
         NoRotateSet module = NoRotateSet.INSTANCE;
-
-        module.setSavedRotation(
-                PlayerExtensionKt.getRotation(Minecraft.getMinecraft().thePlayer)
-        );
-
+        
+                // Save the server's requested rotation before it resets the rotations
+                module.setSavedRotation(PlayerExtensionKt.getRotation(Minecraft.getMinecraft().thePlayer));
         entityplayer.setPositionAndRotation(d0, d1, d2, f, f1);
-        Packet<?> packet = new C03PacketPlayer.C06PacketPlayerPosLook(
-                entityplayer.posX,
-                entityplayer.getEntityBoundingBox().minY,
-                entityplayer.posZ,
-                entityplayer.rotationYaw,
-                entityplayer.rotationPitch,
-                false
-        );
-
-        Blink module2 = Blink.INSTANCE;
-        boolean shouldTrigger = module2.blinkingSend();
-        PacketUtils.sendPacket(packet, shouldTrigger);
-
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
-
-        if (player == null || !module.shouldModify(player)) {
-
-        } else {
-            int sign = RandomUtils.INSTANCE.nextBoolean() ? 1 : -1;
-
-            Rotation rotation = player.ticksExisted == 0
-                    ? RotationUtils.INSTANCE.getServerRotation()
-                    : module.getSavedRotation();
-
-            if (module.getAffectRotation()) {
-                NoRotateSet.INSTANCE.rotateBackToPlayerRotation();
-            }
-
-            // epsilon rotation spoof
-            player.rotationYaw = (rotation.getYaw() + 0.000001f * sign) % 360.0F;
-            player.rotationPitch = (rotation.getPitch() + 0.000001f * sign) % 360.0F;
-
-            RotationUtils.INSTANCE.syncRotations();
-        }
+        injectNoRotateSetAndAntiServerRotationOverride(this.netManager, new C03PacketPlayer.C06PacketPlayerPosLook(entityplayer.posX, entityplayer.getEntityBoundingBox().minY, entityplayer.posZ, entityplayer.rotationYaw, entityplayer.rotationPitch, false));
 
         if (!this.doneLoadingTerrain)
         {
@@ -1113,103 +981,64 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         this.gameController.playerController.setGameType(packetIn.getGameType());
     }
 
-    public void handleExplosion(S27PacketExplosion packetIn) {
+    public void handleExplosion(S27PacketExplosion packetIn)
+    {
+        AntiExploit module1 = AntiExploit.INSTANCE;
+        
+                if (module1.handleEvents() && module1.getCancelExplosionRadius()) {
+                    float originalRadius = packetIn.func_149149_c();
+                    float radius = MathHelper.clamp_float(originalRadius, -100f, 100f);
+        
+                    if (radius != originalRadius) {
+                        if (module1.getWarn().equals("Chat")) {
+                            chat("Cancelled too big TNT explosion radius");
+                        } else if (module1.getWarn().equals("Notification")) {
+                            HUD.INSTANCE.addNotification(Notification.Companion.informative(module1, "Cancelled too big TNT explosion radius", 1000L));
+                        }
+                        return;
+                    }
+                }
+
+        AntiExploit module0 = AntiExploit.INSTANCE;
+        
+                if (module0.handleEvents() && module0.getCancelExplosionStrength()) {
+                    float originalStrength = packetIn.getStrength();
+                    float strength = MathHelper.clamp_float(originalStrength, -100f, 100f);
+        
+                    if (strength != originalStrength) {
+                        if (module0.getWarn().equals("Chat")) {
+                            chat("Cancelled too strong TNT explosion strength");
+                        } else if (module0.getWarn().equals("Notification")) {
+                            HUD.INSTANCE.addNotification(Notification.Companion.informative(module0, "Cancelled too strong TNT explosion strength", 1000L));
+                        }
+                        return;
+                    }
+                }
+
         AntiExploit module = AntiExploit.INSTANCE;
-
-        if (module.handleEvents() && module.getCancelExplosionMotion())
-        {
-            double motionX = packetIn.field_149159_h;
-            double motionY = packetIn.func_149144_d();
-            double motionZ = packetIn.func_149147_e();
-
-            double x = MathHelper.clamp_double(motionX, -50.0D, 50.0D);
-            double y = MathHelper.clamp_double(motionY, -50.0D, 50.0D);
-            double z = MathHelper.clamp_double(motionZ, -50.0D, 50.0D);
-
-            if (x != motionX || y != motionY || z != motionZ)
-            {
-                if (module.getWarn().equals("Chat"))
-                {
-                    chat("Cancelled too strong TNT explosion motion");
+        
+                double motionX = packetIn.field_149159_h;
+                double motionY = packetIn.func_149144_d();
+                double motionZ = packetIn.func_149147_e();
+        
+                if (module.handleEvents() && module.getCancelExplosionMotion()) {
+                    double x = MathHelper.clamp_double(motionX, -50.0, 50.0);
+                    double y = MathHelper.clamp_double(motionY, -50.0, 50.0);
+                    double z = MathHelper.clamp_double(motionZ, -50.0, 50.0);
+        
+                    if (x != motionX || y != motionY || z != motionZ) {
+                        if (module.getWarn().equals("Chat")) {
+                            chat("Cancelled too strong TNT explosion motion");
+                        } else if (module.getWarn().equals("Notification")) {
+                            HUD.INSTANCE.addNotification(Notification.Companion.informative(module,"Cancelled too strong TNT explosion motion", 1000L));
+                        }
+                        return;
+                    }
                 }
-                else if (module.getWarn().equals("Notification"))
-                {
-                    HUD.INSTANCE.addNotification(
-                            Notification.Companion.informative(
-                                    module,
-                                    "Cancelled too strong TNT explosion motion",
-                                    1000L
-                            )
-                    );
-                }
-                return;
-            }
-        }
-
-        if (module.handleEvents() && module.getCancelExplosionStrength())
-        {
-            float originalStrength = packetIn.getStrength();
-            float strength = MathHelper.clamp_float(originalStrength, -100.0F, 100.0F);
-
-            if (strength != originalStrength)
-            {
-                if (module.getWarn().equals("Chat"))
-                {
-                    chat("Cancelled too strong TNT explosion strength");
-                }
-                else if (module.getWarn().equals("Notification"))
-                {
-                    HUD.INSTANCE.addNotification(
-                            Notification.Companion.informative(
-                                    module,
-                                    "Cancelled too strong TNT explosion strength",
-                                    1000L
-                            )
-                    );
-                }
-                return;
-            }
-        }
-
-        if (module.handleEvents() && module.getCancelExplosionRadius())
-        {
-            float originalRadius = packetIn.func_149149_c();
-            float radius = MathHelper.clamp_float(originalRadius, -100.0F, 100.0F);
-
-            if (radius != originalRadius)
-            {
-                if (module.getWarn().equals("Chat"))
-                {
-                    chat("Cancelled too big TNT explosion radius");
-                }
-                else if (module.getWarn().equals("Notification"))
-                {
-                    HUD.INSTANCE.addNotification(
-                            Notification.Companion.informative(
-                                    module,
-                                    "Cancelled too big TNT explosion radius",
-                                    1000L
-                            )
-                    );
-                }
-                return;
-            }
-        }
 
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
-
-        Explosion explosion = new Explosion(
-                this.gameController.theWorld,
-                (Entity)null,
-                packetIn.getX(),
-                packetIn.getY(),
-                packetIn.getZ(),
-                packetIn.getStrength(),
-                packetIn.getAffectedBlockPositions()
-        );
-
+        Explosion explosion = new Explosion(this.gameController.theWorld, (Entity)null, packetIn.getX(), packetIn.getY(), packetIn.getZ(), packetIn.getStrength(), packetIn.getAffectedBlockPositions());
         explosion.doExplosionB(true);
-
         this.gameController.thePlayer.motionX += (double)packetIn.func_149149_c();
         this.gameController.thePlayer.motionY += (double)packetIn.func_149144_d();
         this.gameController.thePlayer.motionZ += (double)packetIn.func_149147_e();
@@ -1451,7 +1280,7 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
     {
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
         EntityPlayer entityplayer = this.gameController.thePlayer;
-        int i = packetIn.getGameState();
+        int i = onChangeGameState(packetIn);
         float f = packetIn.func_149137_d();
         int j = MathHelper.floor_float(f + 0.5F);
 
@@ -1783,33 +1612,27 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
     public void handleResourcePack(S48PacketResourcePackSend packetIn)
     {
         final String url = packetIn.getURL();
-        final String hash = packetIn.getHash();
-
-        if (ClientFixes.INSTANCE.getBlockResourcePackExploit()) {
-            try {
-                final String scheme = new URI(url).getScheme();
-                final boolean isLevelProtocol = "level".equals(scheme);
-
-                if (!"http".equals(scheme) && !"https".equals(scheme) && !isLevelProtocol)
-                    throw new URISyntaxException(url, "Wrong protocol");
-
-                if (isLevelProtocol && (url.contains("..") || !url.endsWith("/resources.zip")))
-                    throw new URISyntaxException(url, "Invalid levelstorage resourcepack path");
-
-            } catch (URISyntaxException e) {
-                ClientUtils.INSTANCE.getLOGGER().error("Failed to handle resource pack", e);
-
-                // We fail of course.
-                netManager.sendPacket(
-                        new C19PacketResourcePackStatus(
-                                hash,
-                                C19PacketResourcePackStatus.Action.FAILED_DOWNLOAD
-                        )
-                );
-
-                return;
-            }
-        }
+                final String hash = packetIn.getHash();
+        
+                if (ClientFixes.INSTANCE.getBlockResourcePackExploit()) {
+                    try {
+                        final String scheme = new URI(url).getScheme();
+                        final boolean isLevelProtocol = "level".equals(scheme);
+        
+                        if (!"http".equals(scheme) && !"https".equals(scheme) && !isLevelProtocol)
+                            throw new URISyntaxException(url, "Wrong protocol");
+        
+                        if (isLevelProtocol && (url.contains("..") || !url.endsWith("/resources.zip")))
+                            throw new URISyntaxException(url, "Invalid levelstorage resourcepack path");
+                    } catch (final URISyntaxException e) {
+                        ClientUtils.INSTANCE.getLOGGER().error("Failed to handle resource pack", e);
+        
+                        // We fail of course.
+                        netManager.sendPacket(new C19PacketResourcePackStatus(hash, FAILED_DOWNLOAD));
+        
+                        return;
+                    }
+                }
 
         final String s = packetIn.getURL();
         final String s1 = packetIn.getHash();
@@ -2090,36 +1913,12 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
     public void handleParticles(S2APacketParticles packetIn)
     {
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
-        float particleSpeed = packetIn.getParticleSpeed();
-
-        AntiExploit module = AntiExploit.INSTANCE;
-        if (module.handleEvents()
-                && module.getLimitParticlesSpeed()
-                && particleSpeed >= 10.0F)
-        {
-            if (module.getWarn().equals("Chat"))
-            {
-                chat("Limited too fast particles speed");
-            }
-            else if (module.getWarn().equals("Notification"))
-            {
-                HUD.INSTANCE.addNotification(
-                        Notification.Companion.informative(
-                                module,
-                                "Limited too fast particles speed",
-                                1000L
-                        )
-                );
-            }
-            particleSpeed = 5.0F;
-        }
-
 
         if (packetIn.getParticleCount() == 0)
         {
-            double d0 = (double)(particleSpeed * packetIn.getXOffset());
-            double d2 = (double)(particleSpeed * packetIn.getYOffset());
-            double d4 = (double)(particleSpeed * packetIn.getZOffset());
+            double d0 = (double)(onParticleSpeed(packetIn) * packetIn.getXOffset());
+            double d2 = (double)(onParticleSpeed(packetIn) * packetIn.getYOffset());
+            double d4 = (double)(onParticleSpeed(packetIn) * packetIn.getZOffset());
 
             try
             {
@@ -2132,37 +1931,14 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         }
         else
         {
-            int particleCount = packetIn.getParticleCount();
-
-            if (module.handleEvents()
-                    && module.getLimitParticlesAmount()
-                    && particleCount >= 500)
-            {
-                if (module.getWarn().equals("Chat"))
-                {
-                    chat("Limited too many particles");
-                }
-                else if (module.getWarn().equals("Notification"))
-                {
-                    HUD.INSTANCE.addNotification(
-                            Notification.Companion.informative(
-                                    module,
-                                    "Limited too many particles",
-                                    1000L
-                            )
-                    );
-                }
-                particleCount = 100;
-            }
-
-            for (int i = 0; i < particleCount; ++i)
+            for (int i = 0; i < onParticleAmount(packetIn); ++i)
             {
                 double d1 = this.avRandomizer.nextGaussian() * (double)packetIn.getXOffset();
                 double d3 = this.avRandomizer.nextGaussian() * (double)packetIn.getYOffset();
                 double d5 = this.avRandomizer.nextGaussian() * (double)packetIn.getZOffset();
-                double d6 = this.avRandomizer.nextGaussian() * (double)particleSpeed;
-                double d7 = this.avRandomizer.nextGaussian() * (double)particleSpeed;
-                double d8 = this.avRandomizer.nextGaussian() * (double)particleSpeed;
+                double d6 = this.avRandomizer.nextGaussian() * (double)onParticleSpeed(packetIn);
+                double d7 = this.avRandomizer.nextGaussian() * (double)onParticleSpeed(packetIn);
+                double d8 = this.avRandomizer.nextGaussian() * (double)onParticleSpeed(packetIn);
 
                 try
                 {
@@ -2244,5 +2020,107 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
     public GameProfile getGameProfile()
     {
         return this.profile;
+    }
+
+
+    private int onParticleAmount(S2APacketParticles packetParticles) {
+        AntiExploit module = AntiExploit.INSTANCE;
+
+        if (module.handleEvents() && module.getLimitParticlesAmount() && packetParticles.getParticleCount() >= 500) {
+            if (module.getWarn().equals("Chat")) {
+                chat("Limited too many particles");
+            } else if (module.getWarn().equals("Notification")) {
+                HUD.INSTANCE.addNotification(Notification.Companion.informative(module, "Limited too many particles", 1000L));
+            }
+            return 100;
+        }
+        return packetParticles.getParticleCount();
+    }
+
+
+    private float onParticleSpeed(S2APacketParticles packetParticles) {
+        AntiExploit module = AntiExploit.INSTANCE;
+
+        if (module.handleEvents() && module.getLimitParticlesSpeed() && packetParticles.getParticleSpeed() >= 10f) {
+            if (module.getWarn().equals("Chat")) {
+                chat("Limited too fast particles speed");
+            } else if (module.getWarn().equals("Notification")) {
+                HUD.INSTANCE.addNotification(Notification.Companion.informative(module, "Limited too fast particles speed", 1000L));
+            }
+            return 5f;
+        }
+        return packetParticles.getParticleSpeed();
+    }
+
+
+    private int onSpawnObjectType(S0EPacketSpawnObject packet) {
+        AntiExploit module = AntiExploit.INSTANCE;
+        
+        if (module.handleEvents() && module.getLimitedEntitySpawn()) {
+            if (packet.getType() == 60) {
+                int arrows = module.getArrowMax();
+                module.setArrowMax(arrows + 1);
+
+                if (arrows >= module.getMaxArrowsSpawned()) {
+                    if (module.getWarn().equals("Chat")) {
+                        chat("Limited too many arrows spawned");
+                    } else if (module.getWarn().equals("Notification")) {
+                        HUD.INSTANCE.addNotification(Notification.Companion.informative(module, "Limited too many arrows spawned", 1000L));
+                    }
+                    return -1;
+                }
+            }
+            if (packet.getType() == 2) {
+                int items = module.getItemMax();
+                module.setItemMax(items + 1);
+
+                if (items >= module.getMaxItemDropped()) {
+                    if (module.getWarn().equals("Chat")) {
+                        chat("Limited too many items dropped");
+                    } else if (module.getWarn().equals("Notification")) {
+                        HUD.INSTANCE.addNotification(Notification.Companion.informative(module,"Limited too many items dropped", 1000L));
+                    }
+                    return -1;
+                }
+            }
+        }
+        return packet.getType();
+    }
+
+
+    private int onChangeGameState(S2BPacketChangeGameState packet) {
+        if (AntiExploit.INSTANCE.handleEvents() && AntiExploit.INSTANCE.getCancelDemo() && packet.getGameState() == 5) {
+            chat("Cancelled Demo GameState packet");
+            return -1; // Cancel demo
+        }
+
+        return packet.getGameState();
+    }
+
+
+    private void injectNoRotateSetAndAntiServerRotationOverride(NetworkManager instance, Packet p_sendPacket_1_) {
+        Blink module2 = Blink.INSTANCE;
+        boolean shouldTrigger = module2.blinkingSend();
+        PacketUtils.sendPacket(p_sendPacket_1_, shouldTrigger);
+
+        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        NoRotateSet module = NoRotateSet.INSTANCE;
+
+        if (player == null || !module.shouldModify(player)) {
+            return;
+        }
+
+        int sign = RandomUtils.INSTANCE.nextBoolean() ? 1 : -1;
+
+        Rotation rotation = player.ticksExisted == 0 ? RotationUtils.INSTANCE.getServerRotation() : module.getSavedRotation();
+
+        if (module.getAffectRotation()) {
+            NoRotateSet.INSTANCE.rotateBackToPlayerRotation();
+        }
+
+        // Slightly modify the client-side rotations, so they pass the rotation difference check in onUpdateWalkingPlayer, EntityPlayerSP.
+        player.rotationYaw = (rotation.getYaw() + 0.000001f * sign) % 360.0F;
+        player.rotationPitch = (rotation.getPitch() + 0.000001f * sign) % 360.0F;
+        RotationUtils.INSTANCE.syncRotations();
     }
 }

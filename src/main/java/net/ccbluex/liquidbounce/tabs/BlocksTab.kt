@@ -19,7 +19,7 @@ class BlocksTab : CreativeTabs(getNextTabId(), "Special blocks") {
                 if (CreativeTabs.creativeTabArray[i] == null)
                     return i
             }
-            throw IllegalStateException("No free CreativeTabs slots")
+            return CreativeTabs.getNextID()
         }
     }
 

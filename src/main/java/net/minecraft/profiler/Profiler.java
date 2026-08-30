@@ -5,19 +5,19 @@ import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.event.Render2DEvent;
-import net.ccbluex.liquidbounce.utils.client.ClassUtils;
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.src.Config;
 import net.optifine.Lagometer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.Render2DEvent;
+import net.ccbluex.liquidbounce.utils.client.ClassUtils;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
 
 public class Profiler
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/client/MixinProfiler.java
     private static final Logger logger = LogManager.getLogger();
     private final List<String> sectionList = Lists.<String>newArrayList();
     private final List<Long> timestampList = Lists.<Long>newArrayList();
@@ -53,10 +53,10 @@ public class Profiler
     public void startSection(String name)
     {
         ClientUtils.INSTANCE.setProfilerName(name);
-
-        if (name.equals("bossHealth") && ClassUtils.INSTANCE.hasClass("net.labymod.api.LabyModAPI")) {
-            EventManager.INSTANCE.call(new Render2DEvent(0F));
-        }
+        
+                if (name.equals("bossHealth") && ClassUtils.INSTANCE.hasClass("net.labymod.api.LabyModAPI")) {
+                    EventManager.INSTANCE.call(new Render2DEvent(0F));
+                }
 
         if (Lagometer.isActive())
         {

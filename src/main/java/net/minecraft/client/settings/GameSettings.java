@@ -56,7 +56,7 @@ import org.lwjgl.opengl.DisplayMode;
 
 public class GameSettings
 {
-
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/client/MixinGameSettings.java
     private static final Logger logger = LogManager.getLogger();
     private static final Gson gson = new Gson();
     private static final ParameterizedType typeListString = new ParameterizedType()
@@ -314,9 +314,9 @@ public class GameSettings
         this.fovSetting = 70.0F;
         this.language = "en_US";
         this.forceUnicodeFont = false;
-
+    
         this.guiScale = 2;
-    }
+}
 
     public static String getKeyDisplayString(int key)
     {

@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
-import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.client.resources.SkinManager;
@@ -13,11 +12,12 @@ import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.WorldSettings;
-
+import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public class NetworkPlayerInfo
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/network/MixinNetworkPlayerInfo.java
     private final GameProfile gameProfile;
     private WorldSettings.GameType gameType;
     private int responseTime;
@@ -83,27 +83,21 @@ public class NetworkPlayerInfo
     public ResourceLocation getLocationSkin()
     {
         final NameProtect nameProtect = NameProtect.INSTANCE;
-
-        if (nameProtect.handleEvents() && nameProtect.getSkinProtect())
-        {
-            if (nameProtect.getAllPlayers()
-                    || java.util.Objects.equals(this.gameProfile.getId(), mc.getSession().getProfile().getId()))
-            {
-                return DefaultPlayerSkin.getDefaultSkin(this.gameProfile.getId());
-            }
-        }
+        
+                if (nameProtect.handleEvents() && nameProtect.getSkinProtect()) {
+                    if (nameProtect.getAllPlayers() || java.util.Objects.equals(gameProfile.getId(), mc.getSession().getProfile().getId())) {
+                        return DefaultPlayerSkin.getDefaultSkin(gameProfile.getId());
+//                        return null;
+                    }
+                }
 
         if (this.locationSkin == null)
         {
             this.loadPlayerTextures();
         }
 
-        return (ResourceLocation)Objects.firstNonNull(
-                this.locationSkin,
-                DefaultPlayerSkin.getDefaultSkin(this.gameProfile.getId())
-        );
+        return (ResourceLocation)Objects.firstNonNull(this.locationSkin, DefaultPlayerSkin.getDefaultSkin(this.gameProfile.getId()));
     }
-
 
     public ResourceLocation getLocationCape()
     {

@@ -164,7 +164,8 @@ public class GuiCreateWorld extends GuiScreen
         Keyboard.enableRepeatEvents(false);
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         if (button.enabled)
         {
             if (button.id == 1)

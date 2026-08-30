@@ -29,7 +29,8 @@ public class GuiConfirmOpenLink extends GuiYesNo
         this.buttonList.add(new GuiButton(1, this.width / 2 - 50 + 105, this.height / 6 + 96, 100, 20, this.cancelButtonText));
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         if (button.id == 2)
         {
             this.copyLinkToClipboard();

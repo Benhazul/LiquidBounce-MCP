@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -9,9 +8,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
+import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
 
 public class BlockSoulSand extends Block
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockSoulSand.java
     public BlockSoulSand()
     {
         super(Material.sand, MapColor.brownColor);
@@ -27,9 +28,9 @@ public class BlockSoulSand extends Block
     public void onEntityCollidedWithBlock(World worldIn, BlockPos pos, IBlockState state, Entity entityIn)
     {
         final NoSlow noSlow = NoSlow.INSTANCE;
-
-        if (noSlow.handleEvents() && noSlow.getSoulSand())
-            return;
+        
+                if (noSlow.handleEvents() && noSlow.getSoulSand())
+                    return;
 
         entityIn.motionX *= 0.4D;
         entityIn.motionZ *= 0.4D;

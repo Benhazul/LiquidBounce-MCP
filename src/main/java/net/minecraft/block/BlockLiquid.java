@@ -24,6 +24,7 @@ import net.ccbluex.liquidbounce.features.module.modules.world.Liquids;
 
 public abstract class BlockLiquid extends Block
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockLiquid.java
     public static final PropertyInteger LEVEL = PropertyInteger.create("level", 0, 15);
 
     protected BlockLiquid(Material materialIn)
@@ -78,9 +79,8 @@ public abstract class BlockLiquid extends Block
     public boolean canCollideCheck(IBlockState state, boolean hitIfLiquid)
     {
         if (Liquids.INSTANCE.handleEvents())
-        {
-            return true;
-        }
+                    return true;
+
         return hitIfLiquid && ((Integer)state.getValue(LEVEL)).intValue() == 0;
     }
 
@@ -185,10 +185,11 @@ public abstract class BlockLiquid extends Block
     public Vec3 modifyAcceleration(World worldIn, BlockPos pos, Entity entityIn, Vec3 motion)
     {
         final NoSlow noSlow = NoSlow.INSTANCE;
-        if (noSlow.handleEvents() && noSlow.getLiquidPush())
-        {
-            return new Vec3(0.0D, 0.0D, 0.0D);
-        }
+        
+                if (noSlow.handleEvents() && noSlow.getLiquidPush()) {
+                    return new Vec3(0, 0, 0);
+                }
+
         return motion.add(this.getFlowVector(worldIn, pos));
     }
 

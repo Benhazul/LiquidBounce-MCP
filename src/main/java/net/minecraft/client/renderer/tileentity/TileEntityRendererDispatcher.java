@@ -2,8 +2,6 @@ package net.minecraft.client.renderer.tileentity;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
@@ -32,9 +30,11 @@ import net.minecraft.util.ReportedException;
 import net.minecraft.world.World;
 import net.optifine.EmissiveTextures;
 import net.optifine.reflect.Reflector;
+import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 
 public class TileEntityRendererDispatcher
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinTileEntityRendererDispatcher.java
     public Map<Class, TileEntitySpecialRenderer> mapSpecialRenderers = Maps.newHashMap();
     public static TileEntityRendererDispatcher instance = new TileEntityRendererDispatcher();
     public FontRenderer fontRenderer;
@@ -107,11 +107,13 @@ public class TileEntityRendererDispatcher
         this.entityZ = entityIn.lastTickPosZ + (entityIn.posZ - entityIn.lastTickPosZ) * (double)partialTicks;
     }
 
-    public void renderTileEntity(TileEntity tileentityIn, float partialTicks, int destroyStage) {
-        XRay xray = XRay.INSTANCE;
-        if (xray.handleEvents() && !xray.getXrayBlocks().contains(tileentityIn.getBlockType())) {
-            return;
-        }
+    public void renderTileEntity(TileEntity tileentityIn, float partialTicks, int destroyStage)
+    {
+        final XRay xray = XRay.INSTANCE;
+        
+                if (xray.handleEvents() && !xray.getXrayBlocks().contains(tileentityIn.getBlockType())) {
+                    return;
+                }
 
         if (tileentityIn.getDistanceSq(this.entityX, this.entityY, this.entityZ) < tileentityIn.getMaxRenderDistanceSquared())
         {

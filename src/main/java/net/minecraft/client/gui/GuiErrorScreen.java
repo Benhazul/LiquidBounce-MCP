@@ -32,7 +32,8 @@ public class GuiErrorScreen extends GuiScreen
     {
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         this.mc.displayGuiScreen((GuiScreen)null);
     }
 }

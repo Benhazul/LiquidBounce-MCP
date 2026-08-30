@@ -92,21 +92,16 @@ public class GuiScreenOptionsSounds extends GuiScreen
 
         protected void mouseDragged(Minecraft mc, int mouseX, int mouseY)
         {
-            if (this.visible)
+            if (this.visible && this.field_146155_p)
             {
-                if (this.field_146155_p)
-                {
-                    this.field_146156_o = (float)(mouseX - (this.xPosition + 4)) / (float)(this.width - 8);
-                    this.field_146156_o = MathHelper.clamp_float(this.field_146156_o, 0.0F, 1.0F);
-                    mc.gameSettings.setSoundLevel(this.field_146153_r, this.field_146156_o);
-                    mc.gameSettings.saveOptions();
-                    this.displayString = this.field_146152_s + ": " + GuiScreenOptionsSounds.this.getSoundVolume(this.field_146153_r);
-                }
+                this.field_146156_o = (float)(mouseX - (this.xPosition + 4)) / (float)(this.width - 8);
+                this.field_146156_o = MathHelper.clamp_float(this.field_146156_o, 0.0F, 1.0F);
 
-                GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                this.drawTexturedModalRect(this.xPosition + (int)(this.field_146156_o * (float)(this.width - 8)), this.yPosition, 0, 66, 4, 20);
-                this.drawTexturedModalRect(this.xPosition + (int)(this.field_146156_o * (float)(this.width - 8)) + 4, this.yPosition, 196, 66, 4, 20);
-                return;
+                mc.gameSettings.setSoundLevel(this.field_146153_r, this.field_146156_o);
+                mc.gameSettings.saveOptions();
+
+                this.displayString = this.field_146152_s + ": "
+                        + GuiScreenOptionsSounds.this.getSoundVolume(this.field_146153_r);
             }
         }
 

@@ -2,7 +2,6 @@ package net.minecraft.client.entity;
 
 import com.mojang.authlib.GameProfile;
 import java.io.File;
-import java.util.Objects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.ImageBufferDownload;
@@ -23,21 +22,24 @@ import net.minecraft.world.WorldSettings;
 import net.optifine.player.CapeUtils;
 import net.optifine.player.PlayerConfigurations;
 import net.optifine.reflect.Reflector;
-
 import net.ccbluex.liquidbounce.cape.CapeAPI;
 import net.ccbluex.liquidbounce.cape.CapeInfo;
 import net.ccbluex.liquidbounce.features.module.modules.misc.NameProtect;
 import net.ccbluex.liquidbounce.features.module.modules.render.NoFOV;
+import java.util.Objects;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public abstract class AbstractClientPlayer extends EntityPlayer
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinAbstractClientPlayer.java
+    private CapeInfo capeInfo;
+
     private NetworkPlayerInfo playerInfo;
     private ResourceLocation locationOfCape = null;
     private long reloadCapeTimeMs = 0L;
     private boolean elytraOfCape = false;
     private String nameClear = null;
     private static final ResourceLocation TEXTURE_ELYTRA = new ResourceLocation("textures/entity/elytra.png");
-    private CapeInfo capeInfo;
 
     public AbstractClientPlayer(World worldIn, GameProfile playerProfile)
     {
@@ -82,11 +84,11 @@ public abstract class AbstractClientPlayer extends EntityPlayer
 
     public ResourceLocation getLocationSkin()
     {
-        if (NameProtect.INSTANCE.handleEvents() && NameProtect.INSTANCE.getSkinProtect())
-        {
-            if (NameProtect.INSTANCE.getAllPlayers() || Objects.equals(this.getGameProfile().getName(), Minecraft.getMinecraft().thePlayer.getGameProfile().getName()))
-            {
-                return DefaultPlayerSkin.getDefaultSkin(this.getUniqueID());
+        final NameProtect nameProtect = NameProtect.INSTANCE;
+        
+        if (nameProtect.handleEvents() && nameProtect.getSkinProtect()) {
+            if (nameProtect.getAllPlayers() || Objects.equals(getGameProfile().getName(), mc.thePlayer.getGameProfile().getName())) {
+                return DefaultPlayerSkin.getDefaultSkin(getUniqueID());
             }
         }
 
@@ -96,18 +98,16 @@ public abstract class AbstractClientPlayer extends EntityPlayer
 
     public ResourceLocation getLocationCape()
     {
-        if (this.capeInfo == null)
-        {
-            CapeAPI.INSTANCE.loadCape(this.getUniqueID(), newCapeInfo -> {
-                this.capeInfo = newCapeInfo;
-                return null;
-            });
-        }
-
-        if (this.capeInfo != null && this.capeInfo.isCapeAvailable())
-        {
-            return this.capeInfo.getResourceLocation();
-        }
+        if (capeInfo == null) {
+                    CapeAPI.INSTANCE.loadCape(getUniqueID(), newCapeInfo -> {
+                        capeInfo = newCapeInfo;
+                        return null;
+                    });
+                }
+        
+                if (capeInfo != null && capeInfo.isCapeAvailable()) {
+                    return capeInfo.getResourceLocation();
+                }
 
         if (!Config.isShowCapes())
         {
@@ -160,18 +160,23 @@ public abstract class AbstractClientPlayer extends EntityPlayer
 
     public float getFovModifier()
     {
-        if (NoFOV.INSTANCE.handleEvents())
-        {
-            float newFOV = NoFOV.INSTANCE.getFov();
+        final NoFOV fovModule = NoFOV.INSTANCE;
+        
+        if (fovModule.handleEvents()) {
+            float newFOV = fovModule.getFov();
 
-            if (this.isUsingItem() && this.getItemInUse().getItem() == Items.bow)
-            {
-                int i = this.getItemInUseDuration();
-                float f1 = (float)i / 20.0F;
-                f1 = f1 > 1.0F ? 1.0F : f1 * f1;
-                newFOV *= 1.0F - f1 * 0.15F;
+            if (!isUsingItem()) {
+                return newFOV;
             }
 
+            if (getItemInUse().getItem() != Items.bow) {
+                return newFOV;
+            }
+
+            int i0 = getItemInUseDuration();
+            float f10 = (float) i0 / 20f;
+            f10 = f10 > 1f ? 1f : f10 * f10;
+            newFOV *= 1f - f10 * 0.15f;
             return newFOV;
         }
 

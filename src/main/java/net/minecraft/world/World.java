@@ -55,6 +55,7 @@ import net.minecraft.world.storage.WorldInfo;
 
 public abstract class World implements IBlockAccess
 {
+    public static double MAX_ENTITY_RADIUS = 2.0;
     private int seaLevel = 63;
     protected boolean scheduledUpdatesAreImmediate;
     public final List<Entity> loadedEntityList = Lists.<Entity>newArrayList();

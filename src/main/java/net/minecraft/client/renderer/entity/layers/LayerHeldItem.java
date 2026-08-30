@@ -1,12 +1,9 @@
 package net.minecraft.client.renderer.entity.layers;
 
-import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
-import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
-import net.ccbluex.liquidbounce.features.module.modules.render.SilentHotbarModule;
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import net.minecraft.block.Block;
-import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBiped;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.EntityLivingBase;
@@ -15,15 +12,19 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
+import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
+import net.ccbluex.liquidbounce.features.module.modules.render.SilentHotbarModule;
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.item.ItemSword;
-
 import java.util.UUID;
-
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 import static net.minecraft.client.renderer.GlStateManager.*;
 
 public class LayerHeldItem implements LayerRenderer<EntityLivingBase>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinLayerHeldItem.java
     private final RendererLivingEntity<?> livingEntityRenderer;
 
     public LayerHeldItem(RendererLivingEntity<?> livingEntityRendererIn)
@@ -31,6 +32,9 @@ public class LayerHeldItem implements LayerRenderer<EntityLivingBase>
         this.livingEntityRenderer = livingEntityRendererIn;
     }
 
+    /**
+     * @author CCBlueX
+     */
     public void doRenderLayer(EntityLivingBase entity, float p_177141_2_, float p_177141_3_, float partialTicks, float p_177141_5_, float p_177141_6_, float p_177141_7_, float scale) {
         SilentHotbarModule module = SilentHotbarModule.INSTANCE;
 

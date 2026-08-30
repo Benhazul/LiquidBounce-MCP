@@ -8,40 +8,51 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.realms.RealmsBridge;
 import net.ccbluex.liquidbounce.utils.client.ServerUtils;
 
-public class GuiIngameMenu extends GuiScreen {
+public class GuiIngameMenu extends GuiScreen
+{
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiIngameMenu.java
     private int field_146445_a;
     private int field_146444_f;
 
-    public void initGui() {
+    public void initGui()
+    {
         this.field_146445_a = 0;
         this.buttonList.clear();
         int i = -16;
         int j = 98;
+        this.buttonList.add(new GuiButton(1, this.width / 2 - 100, this.height / 4 + 120 + i, I18n.format("menu.returnToMenu", new Object[0])));
 
-        GuiButton disconnectButton = new GuiButton(1, this.width / 2 - 100, this.height / 4 + 120 + i, I18n.format("menu.returnToMenu", new Object[0]));
-        this.buttonList.add(disconnectButton);
-
-        if (!this.mc.isIntegratedServerRunning()) {
-            disconnectButton.displayString = I18n.format("menu.disconnect", new Object[0]);
-            disconnectButton.xPosition = this.width / 2 + 2;
-            disconnectButton.width = 98;
-            disconnectButton.height = 20;
-            this.buttonList.add(new GuiButton(1337, this.width / 2 - 100, this.height / 4 + 120 + i, 98, 20, "Reconnect"));
+        if (!this.mc.isIntegratedServerRunning())
+        {
+            ((GuiButton)this.buttonList.get(0)).displayString = I18n.format("menu.disconnect", new Object[0]);
         }
 
         this.buttonList.add(new GuiButton(4, this.width / 2 - 100, this.height / 4 + 24 + i, I18n.format("menu.returnToGame", new Object[0])));
         this.buttonList.add(new GuiButton(0, this.width / 2 - 100, this.height / 4 + 96 + i, 98, 20, I18n.format("menu.options", new Object[0])));
-
-        GuiButton shareToLanBtn;
-        this.buttonList.add(shareToLanBtn = new GuiButton(7, this.width / 2 + 2, this.height / 4 + 96 + i, 98, 20, I18n.format("menu.shareToLan", new Object[0])));
+        GuiButton guibutton;
+        this.buttonList.add(guibutton = new GuiButton(7, this.width / 2 + 2, this.height / 4 + 96 + i, 98, 20, I18n.format("menu.shareToLan", new Object[0])));
         this.buttonList.add(new GuiButton(5, this.width / 2 - 100, this.height / 4 + 48 + i, 98, 20, I18n.format("gui.achievements", new Object[0])));
         this.buttonList.add(new GuiButton(6, this.width / 2 + 2, this.height / 4 + 48 + i, 98, 20, I18n.format("gui.stats", new Object[0])));
+        guibutton.enabled = this.mc.isSingleplayer() && !this.mc.getIntegratedServer().getPublic();
+    
+        if (!mc.isIntegratedServerRunning()) {
+                    final GuiButton disconnectButton = buttonList.get(0);
+                    disconnectButton.xPosition = width / 2 + 2;
+                    disconnectButton.width = 98;
+                    disconnectButton.height = 20;
+                    buttonList.add(new GuiButton(1337, width / 2 - 100, height / 4 + 120 - 16, 98, 20, "Reconnect"));
+                }
+}
 
-        shareToLanBtn.enabled = this.mc.isSingleplayer() && !this.mc.getIntegratedServer().getPublic();
-    }
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
+        if (button.id == 1337) {
+                    mc.theWorld.sendQuittingDisconnectingPacket();
+                    ServerUtils.INSTANCE.connectToLastServer();
+                }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
-        switch (button.id) {
+        switch (button.id)
+        {
             case 0:
                 this.mc.displayGuiScreen(new GuiOptions(this, this.mc.gameSettings));
                 break;
@@ -53,14 +64,23 @@ public class GuiIngameMenu extends GuiScreen {
                 this.mc.theWorld.sendQuittingDisconnectingPacket();
                 this.mc.loadWorld((WorldClient)null);
 
-                if (flag) {
-                    this.mc.displayGuiScreen(new net.ccbluex.liquidbounce.ui.client.GuiMainMenu());
-                } else if (flag1) {
-                    RealmsBridge realmsbridge = new RealmsBridge();
-                    realmsbridge.switchToRealms(new net.ccbluex.liquidbounce.ui.client.GuiMainMenu());
-                } else {
-                    this.mc.displayGuiScreen(new GuiMultiplayer(new net.ccbluex.liquidbounce.ui.client.GuiMainMenu()));
+                if (flag)
+                {
+                    this.mc.displayGuiScreen(new GuiMainMenu());
                 }
+                else if (flag1)
+                {
+                    RealmsBridge realmsbridge = new RealmsBridge();
+                    realmsbridge.switchToRealms(new GuiMainMenu());
+                }
+                else
+                {
+                    this.mc.displayGuiScreen(new GuiMultiplayer(new GuiMainMenu()));
+                }
+
+            case 2:
+            case 3:
+            default:
                 break;
 
             case 4:
@@ -78,21 +98,17 @@ public class GuiIngameMenu extends GuiScreen {
 
             case 7:
                 this.mc.displayGuiScreen(new GuiShareToLan(this));
-                break;
-
-            case 1337:
-                this.mc.theWorld.sendQuittingDisconnectingPacket();
-                ServerUtils.INSTANCE.connectToLastServer();
-                break;
         }
     }
 
-    public void updateScreen() {
+    public void updateScreen()
+    {
         super.updateScreen();
         ++this.field_146444_f;
     }
 
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void drawScreen(int mouseX, int mouseY, float partialTicks)
+    {
         this.drawDefaultBackground();
         this.drawCenteredString(this.fontRendererObj, I18n.format("menu.game", new Object[0]), this.width / 2, 40, 16777215);
         super.drawScreen(mouseX, mouseY, partialTicks);

@@ -10,6 +10,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 public class GuiKeyBindingList extends GuiListExtended
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiKeyBindingList.java
     private final GuiControls field_148191_k;
     private final Minecraft mc;
     private final GuiListExtended.IGuiListEntry[] listEntries;
@@ -59,7 +60,9 @@ public class GuiKeyBindingList extends GuiListExtended
 
     protected int getScrollBarX()
     {
-        return this.width - 5;
+        return width - 5;
+//
+//        return super.getScrollBarX() + 15;
     }
 
     public int getListWidth()

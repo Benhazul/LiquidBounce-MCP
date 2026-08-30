@@ -38,6 +38,7 @@ import net.minecraft.util.AxisAlignedBB
 import net.minecraft.util.BlockPos
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.Vec3
+import net.minecraftforge.event.ForgeEventFactory
 
 /**
  * Allows to get the distance between the current entity and [entity] from the nearest corner of the bounding box
@@ -275,9 +276,9 @@ fun EntityPlayerSP.onPlayerRightClick(
         if (controller.isInCreativeMode) {
             stack.itemDamage = prevMetadata
             stack.stackSize = prevSize
-        } //else if (stack.stackSize <= 0) {
-           // ForgeEventFactory.onPlayerDestroyItem(this, stack)
-        //}
+        } else if (stack.stackSize <= 0) {
+            ForgeEventFactory.onPlayerDestroyItem(this, stack)
+        }
     }
 }
 
@@ -297,7 +298,7 @@ fun EntityPlayerSP.sendUseItem(stack: ItemStack): Boolean {
     return if (newStack != stack || newStack.stackSize != prevSize) {
         if (newStack.stackSize <= 0) {
             mc.thePlayer.inventory.mainInventory[SilentHotbar.currentSlot] = null
-            //ForgeEventFactory.onPlayerDestroyItem(mc.thePlayer, newStack)
+            ForgeEventFactory.onPlayerDestroyItem(mc.thePlayer, newStack)
         } else
             mc.thePlayer.inventory.mainInventory[SilentHotbar.currentSlot] = newStack
 

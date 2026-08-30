@@ -25,9 +25,8 @@ import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.GuiSlot
 import net.minecraft.client.renderer.GlStateManager.*
 import org.lwjgl.input.Keyboard
+import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GL11.glBegin
-import org.lwjgl.opengl.GL11.glEnd
 import java.awt.Color
 import java.text.DecimalFormat
 import java.text.NumberFormat
@@ -87,7 +86,7 @@ class GuiContributors(private val prevGui: GuiScreen) : AbstractScreen() {
                     bindTexture(avatar.textureId)
 
 
-                    glBegin(GL_QUADS)
+                    GL11.glBegin(GL_QUADS)
 
                     glTexCoord2f(0f, 0f)
                     glVertex2i(x, y)
@@ -98,7 +97,7 @@ class GuiContributors(private val prevGui: GuiScreen) : AbstractScreen() {
                     glTexCoord2f(1f, 0f)
                     glVertex2i(x + imageSize, y)
 
-                    glEnd()
+                    GL11.glEnd()
 
                     bindTexture(0)
 
@@ -125,12 +124,12 @@ class GuiContributors(private val prevGui: GuiScreen) : AbstractScreen() {
 
                     disableTexture2D()
                     glColor4f(1f, 1f, 1f, 1f)
-                    glBegin(GL_LINES)
+                    GL11.glBegin(GL_LINES)
 
                     glVertex2f(x.toFloat(), y + Fonts.fontSemibold40.fontHeight / 2f - 1)
                     glVertex2f(x + 3f, y + Fonts.fontSemibold40.fontHeight / 2f - 1)
 
-                    glEnd()
+                    GL11.glEnd()
 
                     Fonts.fontSemibold40.drawString(s, (x + 5f), y.toFloat(), Color.WHITE.rgb, true)
                 }

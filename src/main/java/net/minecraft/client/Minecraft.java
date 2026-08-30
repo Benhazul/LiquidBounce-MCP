@@ -31,24 +31,12 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import javax.imageio.ImageIO;
-
-import net.ccbluex.liquidbounce.LiquidBounce;
-import net.ccbluex.liquidbounce.event.*;
-import net.ccbluex.liquidbounce.features.module.modules.combat.AutoClicker;
-import net.ccbluex.liquidbounce.features.module.modules.combat.TickBase;
-import net.ccbluex.liquidbounce.features.module.modules.exploit.AbortBreaking;
-import net.ccbluex.liquidbounce.features.module.modules.exploit.MultiActions;
-import net.ccbluex.liquidbounce.features.module.modules.world.FastPlace;
-import net.ccbluex.liquidbounce.utils.attack.CPSCounter;
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
-import net.ccbluex.liquidbounce.utils.render.MiniMapRegister;
-import net.ccbluex.liquidbounce.utils.render.RenderUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.audio.MusicTicker;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -196,9 +184,34 @@ import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.OpenGLException;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
+import net.ccbluex.liquidbounce.LiquidBounce;
+import net.ccbluex.liquidbounce.event.*;
+import net.ccbluex.liquidbounce.features.module.modules.combat.AutoClicker;
+import net.ccbluex.liquidbounce.features.module.modules.combat.TickBase;
+import net.ccbluex.liquidbounce.features.module.modules.exploit.AbortBreaking;
+import net.ccbluex.liquidbounce.features.module.modules.exploit.MultiActions;
+import net.ccbluex.liquidbounce.features.module.modules.world.FastPlace;
+import net.ccbluex.liquidbounce.file.configs.models.ClientConfiguration;
+import net.ccbluex.liquidbounce.injection.forge.SplashProgressLock;
+import net.ccbluex.liquidbounce.utils.attack.CPSCounter;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
+import net.ccbluex.liquidbounce.utils.io.MiscUtils;
+import net.ccbluex.liquidbounce.utils.render.IconUtils;
+import net.ccbluex.liquidbounce.utils.render.MiniMapRegister;
+import net.ccbluex.liquidbounce.utils.render.RenderUtils;
+import net.minecraft.block.state.IBlockState;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public class Minecraft implements IThreadListener, IPlayerUsage
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/client/MixinMinecraft.java
+    private long lastFrame = getTime();
+
+    private Future<?> liquidBounce$preloadFuture;
+
     private static final Logger logger = LogManager.getLogger();
     private static final ResourceLocation locationMojangPng = new ResourceLocation("textures/gui/title/mojang.png");
     public static final boolean isRunningOnMac = Util.getOSType() == Util.EnumOS.OSX;
@@ -295,7 +308,6 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     int fpsCounter;
     long prevFrameTime = -1L;
     private String debugProfilerName = "root";
-    private Future<?> liquidBounce$preloadFuture;
 
     public Minecraft(GameConfiguration gameConfig)
     {
@@ -333,11 +345,13 @@ public class Minecraft implements IThreadListener, IPlayerUsage
 
     public void run()
     {
-        this.running = true;
-
         if (displayWidth < 1067) displayWidth = 1067;
-        if (displayHeight < 622) displayHeight = 622;
-        liquidBounce$preloadFuture = LiquidBounce.INSTANCE.preload();
+        
+                if (displayHeight < 622) displayHeight = 622;
+        
+                liquidBounce$preloadFuture = LiquidBounce.INSTANCE.preload();
+
+        this.running = true;
 
         try
         {
@@ -429,6 +443,17 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         this.mcLanguageManager = new LanguageManager(this.metadataSerializer_, this.gameSettings.language);
         this.mcResourceManager.registerReloadListener(this.mcLanguageManager);
         this.refreshResources();
+        long end = System.currentTimeMillis() + 20000;
+        
+                while (end < System.currentTimeMillis() && SplashProgressLock.INSTANCE.isAnimationRunning()) {
+                    synchronized (SplashProgressLock.INSTANCE) {
+                        try {
+                            SplashProgressLock.INSTANCE.wait(10000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
         this.renderEngine = new TextureManager(this.mcResourceManager);
         this.mcResourceManager.registerReloadListener(this.renderEngine);
         this.drawSplashScreen(this.renderEngine);
@@ -479,9 +504,6 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         GlStateManager.loadIdentity();
         GlStateManager.matrixMode(5888);
         this.checkGLError("Startup");
-        liquidBounce$preloadFuture.get();
-
-        LiquidBounce.INSTANCE.startClient();
         this.textureMapBlocks = new TextureMap("textures");
         this.textureMapBlocks.setMipmapLevels(this.gameSettings.mipmapLevels);
         this.renderEngine.loadTickableTexture(TextureMap.locationBlocksTexture, this.textureMapBlocks);
@@ -502,7 +524,10 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         this.guiAchievement = new GuiAchievement(this);
         GlStateManager.viewport(0, 0, this.displayWidth, this.displayHeight);
         this.effectRenderer = new EffectRenderer(this.theWorld, this.renderEngine);
-        this.checkGLError("Post startup");
+        this.checkGLError("Post startup");        liquidBounce$preloadFuture.get();
+        
+                LiquidBounce.INSTANCE.startClient();
+
         this.ingameGUI = new GuiIngame(this);
 
         if (this.serverName != null)
@@ -561,7 +586,10 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
-        Display.setTitle("Minecraft 1.8.9");
+        Display.setTitle("Minecraft 1.8.9");        if (ClientConfiguration.INSTANCE.getClientTitle()) {
+                    Display.setTitle(LiquidBounce.INSTANCE.getClientTitle());
+                }
+
 
         try
         {
@@ -606,6 +634,14 @@ public class Minecraft implements IThreadListener, IPlayerUsage
 
     public void setWindowIcon()
     {
+        if (Util.getOSType() != Util.EnumOS.OSX) {
+                    if (ClientConfiguration.INSTANCE.getClientTitle()) {
+                        if (IconUtils.initLwjglIcon()) {
+                            return;
+                        }
+                    }
+                }
+
         Util.EnumOS util$enumos = Util.getOSType();
 
         if (util$enumos != Util.EnumOS.OSX)
@@ -901,32 +937,52 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     {
         if (this.currentScreen != null)
         {
-            this.currentScreen.onGuiClosed();
+            this.currentScreen.onGuiClosed();        if (currentScreen instanceof net.minecraft.client.gui.GuiMainMenu || (currentScreen != null && currentScreen.getClass().getName().startsWith("net.labymod") && currentScreen.getClass().getSimpleName().equals("ModGuiMainMenu"))) {
+                    currentScreen = new net.ccbluex.liquidbounce.ui.client.GuiMainMenu();
+        
+                    ScaledResolution scaledResolution0 = new ScaledResolution(mc);
+                    currentScreen.setWorldAndResolution(mc, scaledResolution0.getScaledWidth(), scaledResolution0.getScaledHeight());
+                    skipRenderWorld = false;
+                }
+        
+                EventManager.INSTANCE.call(new ScreenEvent(currentScreen));
+        if (currentScreen instanceof net.minecraft.client.gui.GuiMainMenu || (currentScreen != null && currentScreen.getClass().getName().startsWith("net.labymod") && currentScreen.getClass().getSimpleName().equals("ModGuiMainMenu"))) {
+                    currentScreen = new net.ccbluex.liquidbounce.ui.client.GuiMainMenu();
+        
+                    ScaledResolution scaledResolution0 = new ScaledResolution(mc);
+                    currentScreen.setWorldAndResolution(mc, scaledResolution0.getScaledWidth(), scaledResolution0.getScaledHeight());
+                    skipRenderWorld = false;
+                }
+        
+                EventManager.INSTANCE.call(new ScreenEvent(currentScreen));
+
         }
 
         if (guiScreenIn == null && this.theWorld == null)
         {
-            guiScreenIn = new net.ccbluex.liquidbounce.ui.client.GuiMainMenu();
+            guiScreenIn = new GuiMainMenu();
         }
         else if (guiScreenIn == null && this.thePlayer.getHealth() <= 0.0F)
         {
             guiScreenIn = new GuiGameOver();
         }
 
-        if (guiScreenIn instanceof GuiMainMenu || (guiScreenIn != null && guiScreenIn.getClass().getName().startsWith("net.labymod") && guiScreenIn.getClass().getSimpleName().equals("ModGuiMainMenu")))
-        {
-            guiScreenIn = new net.ccbluex.liquidbounce.ui.client.GuiMainMenu();
-        }
-
-        if (guiScreenIn instanceof GuiMainMenu || guiScreenIn instanceof GuiMainMenu)
+        if (guiScreenIn instanceof GuiMainMenu)
         {
             this.gameSettings.showDebugInfo = false;
             this.ingameGUI.getChatGUI().clearChatMessages();
         }
 
-        this.currentScreen = (GuiScreen)guiScreenIn;
+        this.currentScreen = (GuiScreen)guiScreenIn;        if (currentScreen instanceof net.minecraft.client.gui.GuiMainMenu || (currentScreen != null && currentScreen.getClass().getName().startsWith("net.labymod") && currentScreen.getClass().getSimpleName().equals("ModGuiMainMenu"))) {
+                    currentScreen = new net.ccbluex.liquidbounce.ui.client.GuiMainMenu();
+        
+                    ScaledResolution scaledResolution0 = new ScaledResolution(mc);
+                    currentScreen.setWorldAndResolution(mc, scaledResolution0.getScaledWidth(), scaledResolution0.getScaledHeight());
+                    skipRenderWorld = false;
+                }
+        
+                EventManager.INSTANCE.call(new ScreenEvent(currentScreen));
 
-        EventManager.INSTANCE.call(new ScreenEvent(this.currentScreen));
 
         if (guiScreenIn != null)
         {
@@ -991,15 +1047,14 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         System.gc();
     }
 
-    private long lastFrame = getTime();
-
     private void runGameLoop() throws IOException
     {
         final long currentTime = getTime();
-        final int deltaTime = (int) (currentTime - lastFrame);
-        lastFrame = currentTime;
+                final int deltaTime = (int) (currentTime - lastFrame);
+                lastFrame = currentTime;
+        
+                RenderUtils.INSTANCE.setDeltaTime(deltaTime);
 
-        RenderUtils.INSTANCE.setDeltaTime(deltaTime);
         long i = System.nanoTime();
         this.mcProfiler.startSection("root");
 
@@ -1019,13 +1074,12 @@ public class Minecraft implements IThreadListener, IPlayerUsage
             this.timer.updateTimer();
         }
 
-        this.mcProfiler.startSection("scheduledExecutables");
-
         EventManager.INSTANCE.call(GameLoopEvent.INSTANCE);
+        this.mcProfiler.startSection("scheduledExecutables");
 
         synchronized (this.scheduledTasks)
         {
-            while (TickBase.INSTANCE.getDuringTickModification() || !this.scheduledTasks.isEmpty())
+            while (!injectTickBase(this.scheduledTasks))
             {
                 Util.runTask((FutureTask)this.scheduledTasks.poll(), logger);
             }
@@ -1136,10 +1190,6 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         this.mcProfiler.endSection();
     }
 
-    public long getTime() {
-        return (Sys.getTime() * 1000) / Sys.getTimerResolution();
-    }
-
     public void updateDisplay()
     {
         this.mcProfiler.startSection("display_update");
@@ -1176,7 +1226,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
 
     public int getLimitFramerate()
     {
-        return this.theWorld == null && this.currentScreen != null ? 60 : this.gameSettings.limitFramerate;
+        return this.theWorld == null && this.currentScreen != null ? getLimitFramerate(30) : this.gameSettings.limitFramerate;
     }
 
     public boolean isFramerateLimitBelowMax()
@@ -1359,6 +1409,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     public void shutdown()
     {
         LiquidBounce.INSTANCE.stopClient();
+
         this.running = false;
     }
 
@@ -1406,22 +1457,15 @@ public class Minecraft implements IThreadListener, IPlayerUsage
             this.leftClickCounter = 0;
         }
 
-        boolean isUsing = this.thePlayer.isUsingItem();
-        if (MultiActions.INSTANCE.handleEvents())
-        {
-            isUsing = false;
-        }
-
-        if (this.leftClickCounter <= 0 && !isUsing)
+        if (this.leftClickCounter <= 0 && !injectMultiActions(this.thePlayer))
         {
             if (leftClick && this.objectMouseOver != null && this.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK)
             {
-                BlockPos blockpos = this.objectMouseOver.getBlockPos();
-
-                if (this.leftClickCounter == 0 && this.theWorld.getBlockState(blockpos).getBlock().getMaterial() != Material.air)
-                {
-                    EventManager.INSTANCE.call(new ClickBlockEvent(blockpos, this.objectMouseOver.sideHit));
+        final BlockPos blockPos0 = objectMouseOver.getBlockPos();
+                if (leftClickCounter == 0 && theWorld.getBlockState(blockPos0).getBlock().getMaterial() != Material.air) {
+                    EventManager.INSTANCE.call(new ClickBlockEvent(blockPos0, objectMouseOver.sideHit));
                 }
+                BlockPos blockpos = this.objectMouseOver.getBlockPos();
 
                 if (this.theWorld.getBlockState(blockpos).getBlock().getMaterial() != Material.air && this.playerController.onPlayerDamageBlock(blockpos, this.objectMouseOver.sideHit))
                 {
@@ -1431,10 +1475,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
             }
             else
             {
-                if (!AbortBreaking.INSTANCE.handleEvents())
-                {
-                    this.playerController.resetBlockRemoving();
-                }
+                injectAbortBreaking(this.playerController);
             }
         }
     }
@@ -1442,11 +1483,12 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     public void clickMouse()
     {
         if (AutoClicker.INSTANCE.handleEvents()) {
-            this.leftClickCounter = 0;
-        }
-        if (this.leftClickCounter <= 0) {
-            CPSCounter.INSTANCE.registerClick(CPSCounter.MouseButton.LEFT);
-        }
+                    leftClickCounter = 0;
+                }
+        
+                if (leftClickCounter <= 0) {
+                    CPSCounter.INSTANCE.registerClick(CPSCounter.MouseButton.LEFT);
+                }
 
         if (this.leftClickCounter <= 0)
         {
@@ -1495,38 +1537,37 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         if (!this.playerController.getIsHittingBlock())
         {
             this.rightClickDelayTimer = 4;
-
             CPSCounter.INSTANCE.registerClick(CPSCounter.MouseButton.RIGHT);
+
             final FastPlace fastPlace = FastPlace.INSTANCE;
             if (fastPlace.handleEvents()) {
-                boolean shouldSetDelay = true;
+                boolean applyFastPlace = true;
 
-                if (fastPlace.getOnlyBlocks() && (this.thePlayer.getHeldItem() == null || !(this.thePlayer.getHeldItem().getItem() instanceof ItemBlock))) {
-                    shouldSetDelay = false;
-                }
-
-                if (shouldSetDelay) {
-                    if (this.objectMouseOver != null && this.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
-                        BlockPos blockPos = this.objectMouseOver.getBlockPos();
-                        IBlockState blockState = this.theWorld.getBlockState(blockPos);
-                        if (blockState.getBlock().hasTileEntity()) {
-                            shouldSetDelay = false;
-                        }
-                    } else if (fastPlace.getFacingBlocks()) {
-                        shouldSetDelay = false;
+                // Don't spam-click when the player isn't holding blocks
+                if (fastPlace.getOnlyBlocks() && (thePlayer.getHeldItem() == null || !(thePlayer.getHeldItem().getItem() instanceof ItemBlock))) {
+                    applyFastPlace = false;
+                } else if (objectMouseOver != null && objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+                    BlockPos blockPos0 = objectMouseOver.getBlockPos();
+                    IBlockState blockState = theWorld.getBlockState(blockPos0);
+                    // Don't spam-click when interacting with a TileEntity (chests, ...)
+                    if (blockState.getBlock().hasTileEntity(blockState)) {
+                        applyFastPlace = false;
                     }
+                } else if (fastPlace.getFacingBlocks()) {
+                    applyFastPlace = false;
                 }
 
-                if (shouldSetDelay) {
+                if (applyFastPlace) {
                     this.rightClickDelayTimer = fastPlace.getSpeed();
                 }
             }
 
             boolean flag = true;
             ItemStack itemstack = this.thePlayer.inventory.getCurrentItem();
+
             if (this.objectMouseOver == null)
             {
-                logger.warn("Null returned as 'hitResult', this shouldn't happen!");
+                logger.warn("Null returned as \'hitResult\', this shouldn\'t happen!");
             }
             else
             {
@@ -1541,24 +1582,30 @@ public class Minecraft implements IThreadListener, IPlayerUsage
                         {
                             flag = false;
                         }
+
                         break;
+
                     case BLOCK:
                         BlockPos blockpos = this.objectMouseOver.getBlockPos();
+
                         if (this.theWorld.getBlockState(blockpos).getBlock().getMaterial() != Material.air)
                         {
                             int i = itemstack != null ? itemstack.stackSize : 0;
+
                             if (this.playerController.onPlayerRightClick(this.thePlayer, this.theWorld, itemstack, blockpos, this.objectMouseOver.sideHit, this.objectMouseOver.hitVec))
                             {
                                 flag = false;
                                 this.thePlayer.swingItem();
                             }
+
                             if (itemstack == null)
                             {
                                 return;
                             }
+
                             if (itemstack.stackSize == 0)
                             {
-                                this.thePlayer.inventory.mainInventory[SilentHotbar.INSTANCE.getCurrentSlot()] = null;
+                                this.thePlayer.inventory.mainInventory[this.thePlayer.inventory.currentItem] = null;
                             }
                             else if (itemstack.stackSize != i || this.playerController.isInCreativeMode())
                             {
@@ -1567,9 +1614,11 @@ public class Minecraft implements IThreadListener, IPlayerUsage
                         }
                 }
             }
+
             if (flag)
             {
                 ItemStack itemstack1 = this.thePlayer.inventory.getCurrentItem();
+
                 if (itemstack1 != null && this.playerController.sendUseItem(this.thePlayer, this.theWorld, itemstack1))
                 {
                     this.entityRenderer.itemRenderer.resetEquippedProgress2();
@@ -1670,7 +1719,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     public void runTick() throws IOException
     {
         ClientUtils.INSTANCE.setRunTimeTicks(ClientUtils.INSTANCE.getRunTimeTicks() + 1);
-        SilentHotbar.INSTANCE.updateSilentSlot();
+                SilentHotbar.INSTANCE.updateSilentSlot();
 
         if (this.rightClickDelayTimer > 0)
         {
@@ -1808,6 +1857,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
                         }
                         else
                         {
+        SilentHotbar.INSTANCE.setPressedAtSlot(true);
                             this.thePlayer.inventory.changeCurrentItem(j);
                         }
                     }
@@ -1860,11 +1910,9 @@ public class Minecraft implements IThreadListener, IPlayerUsage
                     this.debugCrashKeyPressTime = getSystemTime();
                 }
 
-                this.dispatchKeypresses();
-                if (Keyboard.getEventKeyState() && this.currentScreen == null) {
-                    int key = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
-                    EventManager.INSTANCE.call(new KeyEvent(key));
-                }
+                this.dispatchKeypresses();        if (Keyboard.getEventKeyState() && currentScreen == null)
+                    EventManager.INSTANCE.call(new KeyEvent(Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey()));
+
 
                 if (Keyboard.getEventKeyState())
                 {
@@ -2018,7 +2066,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
                     }
                     else
                     {
-                        SilentHotbar.INSTANCE.setPressedAtSlot(true);
+        SilentHotbar.INSTANCE.setPressedAtSlot(true);
                         this.thePlayer.inventory.currentItem = l;
                     }
                 }
@@ -2109,8 +2157,7 @@ public class Minecraft implements IThreadListener, IPlayerUsage
         {
             if (this.thePlayer != null)
             {
-                EventManager.INSTANCE.call(GameTickEvent.INSTANCE);
-
+        EventManager.INSTANCE.call(GameTickEvent.INSTANCE);
                 ++this.joinPlayerCounter;
 
                 if (this.joinPlayerCounter == 30)
@@ -2205,11 +2252,11 @@ public class Minecraft implements IThreadListener, IPlayerUsage
             this.myNetworkManager.processReceivedPackets();
         }
 
-        EventManager.INSTANCE.call(TickEndEvent.INSTANCE);
-
         this.mcProfiler.endSection();
         this.systemTime = getSystemTime();
-    }
+    
+        EventManager.INSTANCE.call(TickEndEvent.INSTANCE);
+}
 
     public void launchIntegratedServer(String folderName, String worldName, WorldSettings worldSettingsIn)
     {
@@ -2286,10 +2333,11 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     public void loadWorld(WorldClient worldClientIn, String loadingMessage)
     {
         if (theWorld != null) {
-            MiniMapRegister.INSTANCE.unloadAllChunks();
-        }
+                    MiniMapRegister.INSTANCE.unloadAllChunks();
+                }
+        
+                EventManager.INSTANCE.call(new WorldEvent(worldClientIn));
 
-        EventManager.INSTANCE.call(new WorldEvent(worldClientIn));
         if (worldClientIn == null)
         {
             NetHandlerPlayClient nethandlerplayclient = this.getNetHandler();
@@ -2546,8 +2594,6 @@ public class Minecraft implements IThreadListener, IPlayerUsage
 
             InventoryPlayer inventoryplayer = this.thePlayer.inventory;
 
-            int currentSlot = SilentHotbar.INSTANCE.getCurrentSlot();
-
             if (tileentity == null)
             {
                 inventoryplayer.setCurrentItem(item, i, flag1, flag);
@@ -2555,13 +2601,13 @@ public class Minecraft implements IThreadListener, IPlayerUsage
             else
             {
                 ItemStack itemstack1 = this.pickBlockWithNBT(item, i, tileentity);
-                inventoryplayer.setInventorySlotContents(currentSlot, itemstack1);
+                inventoryplayer.setInventorySlotContents(inventoryplayer.currentItem, itemstack1);
             }
 
             if (flag)
             {
-                int j = this.thePlayer.inventoryContainer.inventorySlots.size() - 9 + currentSlot;
-                this.playerController.sendSlotPacket(inventoryplayer.getStackInSlot(currentSlot), j);
+                int j = this.thePlayer.inventoryContainer.inventorySlots.size() - 9 + inventoryplayer.currentItem;
+                this.playerController.sendSlotPacket(inventoryplayer.getStackInSlot(inventoryplayer.currentItem), j);
             }
         }
     }
@@ -3197,5 +3243,38 @@ public class Minecraft implements IThreadListener, IPlayerUsage
     public void setConnectedToRealms(boolean isConnected)
     {
         this.connectedToRealms = isConnected;
+    }
+
+
+    public long getTime() {
+        return (Sys.getTime() * 1000) / Sys.getTimerResolution();
+    }
+
+    private boolean injectMultiActions(EntityPlayerSP instance) {
+        ItemStack itemStack = instance.itemInUse;
+
+        if (MultiActions.INSTANCE.handleEvents()) itemStack = null;
+
+        return itemStack != null;
+    }
+
+
+    private void injectAbortBreaking(PlayerControllerMP instance) {
+        if (!AbortBreaking.INSTANCE.handleEvents()) {
+            instance.resetBlockRemoving();
+        }
+    }
+
+
+    private boolean injectTickBase(Queue instance) {
+        return TickBase.INSTANCE.getDuringTickModification() || instance.isEmpty();
+    }
+
+
+    /**
+     * @author CCBlueX
+     */
+    public int getLimitFramerate(int constant) {
+        return 60;
     }
 }

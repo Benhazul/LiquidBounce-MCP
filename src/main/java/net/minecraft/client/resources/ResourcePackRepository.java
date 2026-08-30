@@ -39,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 
 public class ResourcePackRepository
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/client/MixinResourcePackRepository.java
     private static final Logger logger = LogManager.getLogger();
     private static final FileFilter resourcePackFilter = new FileFilter()
     {
@@ -250,6 +251,10 @@ public class ResourcePackRepository
         }
     }
 
+    /**
+     * @author Mojang
+     * @reason Fix a bug
+     */
     private void deleteOldServerResourcesPacks() {
         try {
             List<File> lvt_1_1_ = Lists.newArrayList(FileUtils.listFiles(dirServerResourcepacks, TrueFileFilter.TRUE, null));

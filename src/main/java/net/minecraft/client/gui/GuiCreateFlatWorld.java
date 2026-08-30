@@ -68,7 +68,8 @@ public class GuiCreateFlatWorld extends GuiScreen
         this.createFlatWorldListSlotGui.handleMouseInput();
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         int i = this.theFlatGeneratorInfo.getFlatLayers().size() - this.createFlatWorldListSlotGui.field_148228_k - 1;
 
         if (button.id == 1)

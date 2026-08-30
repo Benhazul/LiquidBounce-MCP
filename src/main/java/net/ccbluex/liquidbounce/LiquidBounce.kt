@@ -77,7 +77,7 @@ object LiquidBounce {
 
     const val MINECRAFT_VERSION = "1.8.9"
     
-    val clientVersionText = "b100"
+    val clientVersionText = gitInfo["git.build.version"]?.toString() ?: "unknown"
     val clientVersionNumber = clientVersionText.substring(1).toIntOrNull() ?: 0 // version format: "b<VERSION>" on legacy
     val clientCommit = gitInfo["git.commit.id.abbrev"]?.let { "git-$it" } ?: "unknown"
     val clientBranch = gitInfo["git.branch"]?.toString() ?: "unknown"
@@ -88,7 +88,7 @@ object LiquidBounce {
      */
     const val IN_DEV = false
 
-    val clientTitle = CLIENT_NAME + " Legacy " + clientVersionText + " " + /*clientCommit*/ "03bc91a" + "  (Unsupported) | " + MINECRAFT_VERSION + if (IN_DEV) " | DEVELOPMENT BUILD" else ""
+    val clientTitle = CLIENT_NAME + " Legacy " + clientVersionText + " " + clientCommit + "  (Unsupported) | " + MINECRAFT_VERSION + if (IN_DEV) " | DEVELOPMENT BUILD" else ""
 
     var isStarting = true
 
@@ -237,7 +237,7 @@ object LiquidBounce {
             // Login into known token if not empty
             if (CapeService.knownToken.isNotBlank()) {
                 SharedScopes.IO.launch {
-                    runCatching<Unit> {
+                    runCatching {
                         CapeService.login(CapeService.knownToken)
                     }.onFailure {
                         LOGGER.error("Failed to login into known cape token.", it)

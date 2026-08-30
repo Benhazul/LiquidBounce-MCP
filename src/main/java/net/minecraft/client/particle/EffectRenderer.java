@@ -3,7 +3,10 @@ package net.minecraft.client.particle;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -28,9 +31,11 @@ import net.minecraft.util.ReportedException;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.optifine.reflect.Reflector;
+import java.util.ConcurrentModificationException;
 
 public class EffectRenderer
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinEffectRenderer.java
     private static final ResourceLocation particleTextures = new ResourceLocation("textures/particle/particles.png");
     protected World worldObj;
     private List<EntityFX>[][] fxLayers = new List[4][];
@@ -149,6 +154,10 @@ public class EffectRenderer
         }
     }
 
+    /**
+     * @author Mojang
+     * @author Marco
+     */
     public void updateEffects() {
         try {
             for (int i = 0; i < 4; ++i)

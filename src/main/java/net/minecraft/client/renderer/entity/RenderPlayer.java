@@ -1,9 +1,5 @@
 package net.minecraft.client.renderer.entity;
 
-import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
-import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
-import net.ccbluex.liquidbounce.features.module.modules.render.SilentHotbarModule;
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.model.ModelPlayer;
@@ -17,14 +13,19 @@ import net.minecraft.client.renderer.entity.layers.LayerHeldItem;
 import net.minecraft.entity.player.EnumPlayerModelParts;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.ResourceLocation;
+import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura;
+import net.ccbluex.liquidbounce.features.module.modules.movement.NoSlow;
+import net.ccbluex.liquidbounce.features.module.modules.render.SilentHotbarModule;
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
+import net.minecraft.item.ItemSword;
 
 public class RenderPlayer extends RendererLivingEntity<AbstractClientPlayer>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinRenderPlayer.java
     private boolean smallArms;
 
     public RenderPlayer(RenderManager renderManager)
@@ -65,6 +66,9 @@ public class RenderPlayer extends RendererLivingEntity<AbstractClientPlayer>
         }
     }
 
+    /**
+     * @author CCBlueX
+     */
     private void setModelVisibilities(AbstractClientPlayer entity) {
         ModelPlayer modelplayer = this.getMainModel();
         if (entity.isSpectator()) {
@@ -103,6 +107,7 @@ public class RenderPlayer extends RendererLivingEntity<AbstractClientPlayer>
                 }
             }
         }
+
     }
 
     public ResourceLocation getEntityTexture(AbstractClientPlayer entity)

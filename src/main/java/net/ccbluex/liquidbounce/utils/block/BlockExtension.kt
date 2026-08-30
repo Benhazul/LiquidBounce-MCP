@@ -43,7 +43,7 @@ fun BlockPos.canBeClicked(): Boolean {
         this !in world.worldBorder -> false
         !block.canCollideCheck(state, false) -> false
         block.material.isReplaceable -> false
-        block.hasTileEntity(/*state*/) -> false
+        block.hasTileEntity(state) -> false
         !isBlockBBValid(this, state, supportSlabs = true, supportPartialBlocks = true) -> false
         world.loadedEntityList.any { it is EntityFallingBlock && it.position == this } -> false
         block is BlockContainer || block is BlockWorkbench -> false

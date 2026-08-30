@@ -5,19 +5,11 @@ import com.google.common.base.Predicates;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.nio.FloatBuffer;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
-
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.event.Render3DEvent;
-import net.ccbluex.liquidbounce.features.module.modules.combat.Backtrack;
-import net.ccbluex.liquidbounce.features.module.modules.combat.ForwardTrack;
-import net.ccbluex.liquidbounce.features.module.modules.misc.OverrideRaycast;
-import net.ccbluex.liquidbounce.features.module.modules.player.Reach;
-import net.ccbluex.liquidbounce.features.module.modules.render.*;
-import net.ccbluex.liquidbounce.utils.client.ClientUtils;
-import net.ccbluex.liquidbounce.utils.rotation.Rotation;
-import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.material.Material;
@@ -104,9 +96,24 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.Project;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.Render3DEvent;
+import net.ccbluex.liquidbounce.features.module.modules.combat.Backtrack;
+import net.ccbluex.liquidbounce.features.module.modules.combat.ForwardTrack;
+import net.ccbluex.liquidbounce.features.module.modules.misc.OverrideRaycast;
+import net.ccbluex.liquidbounce.features.module.modules.player.Reach;
+import net.ccbluex.liquidbounce.features.module.modules.render.*;
+import net.ccbluex.liquidbounce.utils.client.ClientUtils;
+import net.ccbluex.liquidbounce.utils.rotation.Rotation;
+import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.util.*;
+import java.util.ArrayList;
+import java.util.Objects;
 
 public class EntityRenderer implements IResourceManagerReloadListener
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinEntityRenderer.java
     private static final Logger logger = LogManager.getLogger();
     private static final ResourceLocation locationRainPng = new ResourceLocation("textures/environment/rain.png");
     private static final ResourceLocation locationSnowPng = new ResourceLocation("textures/environment/snow.png");
@@ -406,103 +413,104 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
     }
 
-    public void getMouseOver(float partialTicks) {
-        Entity entity = mc.getRenderViewEntity();
-        if (entity != null && mc.theWorld != null) {
-            mc.mcProfiler.startSection("pick");
-            mc.pointedEntity = null;
-
-            final Reach reach = Reach.INSTANCE;
-
-            double d0 = reach.handleEvents() ? reach.getMaxRange() : mc.playerController.getBlockReachDistance();
-            Vec3 vec3 = entity.getPositionEyes(partialTicks);
-            Rotation rotation = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
-            Vec3 vec31 = RotationUtils.INSTANCE.getVectorForRotation(RotationUtils.INSTANCE.getCurrentRotation() != null && OverrideRaycast.INSTANCE.shouldOverride() ? RotationUtils.INSTANCE.getCurrentRotation() : rotation);
-            double p_rayTrace_1_ = (reach.handleEvents() ? reach.getBuildReach() : d0);
-            Vec3 vec32 = vec3.addVector(vec31.xCoord * p_rayTrace_1_, vec31.yCoord * p_rayTrace_1_, vec31.zCoord * p_rayTrace_1_);
-            mc.objectMouseOver = entity.worldObj.rayTraceBlocks(vec3, vec32, false, false, true);
-            double d1 = d0;
-            boolean flag = false;
-            if (mc.playerController.extendedReach()) {
-                // d0 = 6;
-                d1 = 6;
-            } else if (d0 > 3) {
-                flag = true;
-            }
-
-            if (mc.objectMouseOver != null) {
-                d1 = mc.objectMouseOver.hitVec.distanceTo(vec3);
-            }
-
-            if (reach.handleEvents()) {
-                double p_rayTrace_1_2 = reach.getBuildReach();
-                Vec3 vec322 = vec3.addVector(vec31.xCoord * p_rayTrace_1_2, vec31.yCoord * p_rayTrace_1_2, vec31.zCoord * p_rayTrace_1_2);
-                final MovingObjectPosition movingObjectPosition = entity.worldObj.rayTraceBlocks(vec3, vec322, false, false, true);
-
-                if (movingObjectPosition != null) d1 = movingObjectPosition.hitVec.distanceTo(vec3);
-            }
-
-            pointedEntity = null;
-            Vec3 vec33 = null;
-            List<Entity> list = mc.theWorld.getEntities(Entity.class, Predicates.and(EntitySelectors.NOT_SPECTATING, p_apply_1_ -> p_apply_1_ != null && p_apply_1_.canBeCollidedWith() && p_apply_1_ != entity));
-            double d2 = d1;
-
-            for (Entity entity1 : list) {
-                float f1 = entity1.getCollisionBorderSize();
-
-                final ArrayList<AxisAlignedBB> boxes = new ArrayList<>();
-                boxes.add(entity1.getEntityBoundingBox().expand(f1, f1, f1));
-
-                Backtrack.INSTANCE.loopThroughBacktrackData(entity1, () -> {
-                    boxes.add(entity1.getEntityBoundingBox().expand(f1, f1, f1));
-                    return false;
-                });
-
-                ForwardTrack.INSTANCE.includeEntityTruePos(entity1, () -> {
-                    boxes.add(entity1.getEntityBoundingBox().expand(f1, f1, f1));
-                    return null;
-                });
-
-                for (final AxisAlignedBB axisalignedbb : boxes) {
-                    MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(vec3, vec32);
-                    if (axisalignedbb.isVecInside(vec3)) {
-                        if (d2 >= 0) {
-                            pointedEntity = entity1;
-                            vec33 = movingobjectposition == null ? vec3 : movingobjectposition.hitVec;
-                            d2 = 0;
-                        }
-                    } else if (movingobjectposition != null) {
-                        double d3 = vec3.distanceTo(movingobjectposition.hitVec);
-                        if (d3 < d2 || d2 == 0) {
-                            if (entity1 == entity.ridingEntity && !entity.canRiderInteract()) {
-                                if (d2 == 0) {
-                                    pointedEntity = entity1;
-                                    vec33 = movingobjectposition.hitVec;
+    public void getMouseOver(float partialTicks)
+    {
+        Entity entity0 = mc.getRenderViewEntity();
+                if (entity0 != null && mc.theWorld != null) {
+                    mc.mcProfiler.startSection("pick");
+                    mc.pointedEntity = null;
+        
+                    final Reach reach = Reach.INSTANCE;
+        
+                    double d00 = reach.handleEvents() ? reach.getMaxRange() : mc.playerController.getBlockReachDistance();
+                    Vec3 vec30 = entity0.getPositionEyes(partialTicks);
+                    Rotation rotation = new Rotation(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+                    Vec3 vec310 = RotationUtils.INSTANCE.getVectorForRotation(RotationUtils.INSTANCE.getCurrentRotation() != null && OverrideRaycast.INSTANCE.shouldOverride() ? RotationUtils.INSTANCE.getCurrentRotation() : rotation);
+                    double p_rayTrace_1_ = (reach.handleEvents() ? reach.getBuildReach() : d00);
+                    Vec3 vec320 = vec30.addVector(vec310.xCoord * p_rayTrace_1_, vec310.yCoord * p_rayTrace_1_, vec310.zCoord * p_rayTrace_1_);
+                    mc.objectMouseOver = entity0.worldObj.rayTraceBlocks(vec30, vec320, false, false, true);
+                    double d10 = d00;
+                    boolean flag0 = false;
+                    if (mc.playerController.extendedReach()) {
+                        // d00 = 6;
+                        d10 = 6;
+                    } else if (d00 > 3) {
+                        flag0 = true;
+                    }
+        
+                    if (mc.objectMouseOver != null) {
+                        d10 = mc.objectMouseOver.hitVec.distanceTo(vec30);
+                    }
+        
+                    if (reach.handleEvents()) {
+                        double p_rayTrace_1_2 = reach.getBuildReach();
+                        Vec3 vec322 = vec30.addVector(vec310.xCoord * p_rayTrace_1_2, vec310.yCoord * p_rayTrace_1_2, vec310.zCoord * p_rayTrace_1_2);
+                        final MovingObjectPosition movingObjectPosition0 = entity0.worldObj.rayTraceBlocks(vec30, vec322, false, false, true);
+        
+                        if (movingObjectPosition0 != null) d10 = movingObjectPosition0.hitVec.distanceTo(vec30);
+                    }
+        
+                    pointedEntity = null;
+                    Vec3 vec330 = null;
+                    List<Entity> list0 = mc.theWorld.getEntities(Entity.class, Predicates.and(EntitySelectors.NOT_SPECTATING, p_apply_1_ -> p_apply_1_ != null && p_apply_1_.canBeCollidedWith() && p_apply_1_ != entity0));
+                    double d20 = d10;
+        
+                    for (Entity entity10 : list0) {
+                        float f10 = entity10.getCollisionBorderSize();
+        
+                        final ArrayList<AxisAlignedBB> boxes = new ArrayList<>();
+                        boxes.add(entity10.getEntityBoundingBox().expand(f10, f10, f10));
+        
+                        Backtrack.INSTANCE.loopThroughBacktrackData(entity10, () -> {
+                            boxes.add(entity10.getEntityBoundingBox().expand(f10, f10, f10));
+                            return false;
+                        });
+        
+                        ForwardTrack.INSTANCE.includeEntityTruePos(entity10, () -> {
+                            boxes.add(entity10.getEntityBoundingBox().expand(f10, f10, f10));
+                            return null;
+                        });
+        
+                        for (final AxisAlignedBB axisalignedbb0 : boxes) {
+                            MovingObjectPosition movingobjectposition1 = axisalignedbb0.calculateIntercept(vec30, vec320);
+                            if (axisalignedbb0.isVecInside(vec30)) {
+                                if (d20 >= 0) {
+                                    pointedEntity = entity10;
+                                    vec330 = movingobjectposition1 == null ? vec30 : movingobjectposition1.hitVec;
+                                    d20 = 0;
                                 }
-                            } else {
-                                pointedEntity = entity1;
-                                vec33 = movingobjectposition.hitVec;
-                                d2 = d3;
+                            } else if (movingobjectposition1 != null) {
+                                double d30 = vec30.distanceTo(movingobjectposition1.hitVec);
+                                if (d30 < d20 || d20 == 0) {
+                                    if (entity10 == entity0.ridingEntity && !entity0.canRiderInteract()) {
+                                        if (d20 == 0) {
+                                            pointedEntity = entity10;
+                                            vec330 = movingobjectposition1.hitVec;
+                                        }
+                                    } else {
+                                        pointedEntity = entity10;
+                                        vec330 = movingobjectposition1.hitVec;
+                                        d20 = d30;
+                                    }
+                                }
                             }
                         }
                     }
+        
+                    if (pointedEntity != null && flag0 && vec30.distanceTo(vec330) > (reach.handleEvents() ? reach.getCombatReach() : 3)) {
+                        pointedEntity = null;
+                        mc.objectMouseOver = new MovingObjectPosition(MovingObjectPosition.MovingObjectType.MISS, Objects.requireNonNull(vec330), null, new BlockPos(vec330));
+                    }
+        
+                    if (pointedEntity != null && (d20 < d10 || mc.objectMouseOver == null)) {
+                        mc.objectMouseOver = new MovingObjectPosition(pointedEntity, vec330);
+                        if (pointedEntity instanceof EntityLivingBase || pointedEntity instanceof EntityItemFrame) {
+                            mc.pointedEntity = pointedEntity;
+                        }
+                    }
+        
+                    mc.mcProfiler.endSection();
                 }
-            }
-
-            if (pointedEntity != null && flag && vec3.distanceTo(vec33) > (reach.handleEvents() ? reach.getCombatReach() : 3)) {
-                pointedEntity = null;
-                mc.objectMouseOver = new MovingObjectPosition(MovingObjectPosition.MovingObjectType.MISS, Objects.requireNonNull(vec33), null, new BlockPos(vec33));
-            }
-
-            if (pointedEntity != null && (d2 < d1 || mc.objectMouseOver == null)) {
-                mc.objectMouseOver = new MovingObjectPosition(pointedEntity, vec33);
-                if (pointedEntity instanceof EntityLivingBase || pointedEntity instanceof EntityItemFrame) {
-                    mc.pointedEntity = pointedEntity;
-                }
-            }
-
-            mc.mcProfiler.endSection();
-        }
     }
 
     private void updateFovModifierHand()
@@ -599,10 +607,11 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
     }
 
-    private void hurtCameraEffect(float partialTicks) {
+    private void hurtCameraEffect(float partialTicks)
+    {
         if (NoHurtCam.INSTANCE.handleEvents()) {
-            return;
-        }
+                    return;
+                }
 
         if (this.mc.getRenderViewEntity() instanceof EntityLivingBase)
         {
@@ -648,6 +657,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
     private void orientCamera(float partialTicks)
     {
         FreeLook.INSTANCE.useModifiedRotation();
+
         Entity entity = this.mc.getRenderViewEntity();
         float f = entity.getEyeHeight();
         double d0 = entity.prevPosX + (entity.posX - entity.prevPosX) * (double)partialTicks;
@@ -700,9 +710,8 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 double d4 = (double)(-MathHelper.sin(f1 / 180.0F * (float)Math.PI) * MathHelper.cos(f2 / 180.0F * (float)Math.PI)) * d3;
                 double d5 = (double)(MathHelper.cos(f1 / 180.0F * (float)Math.PI) * MathHelper.cos(f2 / 180.0F * (float)Math.PI)) * d3;
                 double d6 = (double)(-MathHelper.sin(f2 / 180.0F * (float)Math.PI)) * d3;
-                int limit = CameraClip.INSTANCE.handleEvents() ? 0 : 8;
 
-                for (int i = 0; i < limit; ++i)
+                for (int i = 0; i < injectCameraClip(8); ++i)
                 {
                     float f3 = (float)((i & 1) * 2 - 1);
                     float f4 = (float)((i >> 1 & 1) * 2 - 1);
@@ -845,29 +854,16 @@ public class EntityRenderer implements IResourceManagerReloadListener
         {
             int i = 20;
 
-            AntiBlind module = AntiBlind.INSTANCE;
-
-            boolean confusionActive =
-                    (!module.handleEvents() || !module.getConfusionEffect())
-                            && this.mc.thePlayer.isPotionActive(Potion.confusion);
-
-            if (confusionActive)
+            if (injectAntiBlindA(this.mc.thePlayer, Potion.confusion))
             {
                 i = 7;
             }
 
             float f2 = 5.0F / (f1 * f1 + 5.0F) - f1 * 0.04F;
             f2 = f2 * f2;
-
-            GlStateManager.rotate(
-                    ((float)this.rendererUpdateCount + partialTicks) * (float)i,
-                    0.0F, 1.0F, 1.0F
-            );
+            GlStateManager.rotate(((float)this.rendererUpdateCount + partialTicks) * (float)i, 0.0F, 1.0F, 1.0F);
             GlStateManager.scale(1.0F / f2, 1.0F, 1.0F);
-            GlStateManager.rotate(
-                    -((float)this.rendererUpdateCount + partialTicks) * (float)i,
-                    0.0F, 1.0F, 1.0F
-            );
+            GlStateManager.rotate(-((float)this.rendererUpdateCount + partialTicks) * (float)i, 0.0F, 1.0F, 1.0F);
         }
 
         this.orientCamera(partialTicks);
@@ -1031,120 +1027,122 @@ public class EntityRenderer implements IResourceManagerReloadListener
     private void updateLightmap(float partialTicks)
     {
         final Ambience ambience = Ambience.INSTANCE;
-        if (this.lightmapUpdateNeeded) {
-            this.mc.mcProfiler.startSection("lightTex");
-            World world = this.mc.theWorld;
-            if (world != null) {
-                float f = world.getSunBrightness(1.0F);
-                float f1 = f * 0.95F + 0.05F;
-
-                for (int i = 0; i < 256; ++i) {
-                    float f2 = world.provider.getLightBrightnessTable()[i / 16] * f1;
-                    float f3 = world.provider.getLightBrightnessTable()[i % 16] * (this.torchFlickerX * 0.1F + 1.5F);
-                    if (world.getLastLightningBolt() > 0) {
-                        f2 = world.provider.getLightBrightnessTable()[i / 16];
-                    }
-
-                    float f4 = f2 * (f * 0.65F + 0.35F);
-                    float f5 = f2 * (f * 0.65F + 0.35F);
-                    float f6 = f3 * ((f3 * 0.6F + 0.4F) * 0.6F + 0.4F);
-                    float f7 = f3 * (f3 * f3 * 0.6F + 0.4F);
-                    float f8 = f4 + f3;
-                    float f9 = f5 + f6;
-                    float f10 = f2 + f7;
-                    f8 = f8 * 0.96F + 0.03F;
-                    f9 = f9 * 0.96F + 0.03F;
-                    f10 = f10 * 0.96F + 0.03F;
-                    if (this.bossColorModifier > 0.0F) {
-                        float f11 = this.bossColorModifierPrev + (this.bossColorModifier - this.bossColorModifierPrev) * partialTicks;
-                        f8 = f8 * (1.0F - f11) + f8 * 0.7F * f11;
-                        f9 = f9 * (1.0F - f11) + f9 * 0.6F * f11;
-                        f10 = f10 * (1.0F - f11) + f10 * 0.6F * f11;
-                    }
-
-                    if (world.provider.getDimensionId() == 1) {
-                        f8 = 0.22F + f3 * 0.75F;
-                        f9 = 0.28F + f6 * 0.75F;
-                        f10 = 0.25F + f7 * 0.75F;
-                    }
-
-                    if (this.mc.thePlayer.isPotionActive(Potion.nightVision)) {
-                        float f15 = this.getNightVisionBrightness(this.mc.thePlayer, partialTicks);
-                        float f12 = 1.0F / f8;
-                        if (f12 > 1.0F / f9) {
-                            f12 = 1.0F / f9;
+                if (this.lightmapUpdateNeeded) {
+                    this.mc.mcProfiler.startSection("lightTex");
+                    World world0 = this.mc.theWorld;
+                    if (world0 != null) {
+                        float f0 = world0.getSunBrightness(1.0F);
+                        float f18 = f0 * 0.95F + 0.05F;
+        
+                        for (int i0 = 0; i0 < 256; ++i0) {
+                            float f20 = world0.provider.getLightBrightnessTable()[i0 / 16] * f18;
+                            float f30 = world0.provider.getLightBrightnessTable()[i0 % 16] * (this.torchFlickerX * 0.1F + 1.5F);
+                            if (world0.getLastLightningBolt() > 0) {
+                                f20 = world0.provider.getLightBrightnessTable()[i0 / 16];
+                            }
+        
+                            float f40 = f20 * (f0 * 0.65F + 0.35F);
+                            float f50 = f20 * (f0 * 0.65F + 0.35F);
+                            float f60 = f30 * ((f30 * 0.6F + 0.4F) * 0.6F + 0.4F);
+                            float f70 = f30 * (f30 * f30 * 0.6F + 0.4F);
+                            float f80 = f40 + f30;
+                            float f90 = f50 + f60;
+                            float f100 = f20 + f70;
+                            f80 = f80 * 0.96F + 0.03F;
+                            f90 = f90 * 0.96F + 0.03F;
+                            f100 = f100 * 0.96F + 0.03F;
+                            if (this.bossColorModifier > 0.0F) {
+                                float f110 = this.bossColorModifierPrev + (this.bossColorModifier - this.bossColorModifierPrev) * partialTicks;
+                                f80 = f80 * (1.0F - f110) + f80 * 0.7F * f110;
+                                f90 = f90 * (1.0F - f110) + f90 * 0.6F * f110;
+                                f100 = f100 * (1.0F - f110) + f100 * 0.6F * f110;
+                            }
+        
+                            if (world0.provider.getDimensionId() == 1) {
+                                f80 = 0.22F + f30 * 0.75F;
+                                f90 = 0.28F + f60 * 0.75F;
+                                f100 = 0.25F + f70 * 0.75F;
+                            }
+        
+                            if (this.mc.thePlayer.isPotionActive(Potion.nightVision)) {
+                                float f150 = this.getNightVisionBrightness(this.mc.thePlayer, partialTicks);
+                                float f120 = 1.0F / f80;
+                                if (f120 > 1.0F / f90) {
+                                    f120 = 1.0F / f90;
+                                }
+        
+                                if (f120 > 1.0F / f100) {
+                                    f120 = 1.0F / f100;
+                                }
+        
+                                f80 = f80 * (1.0F - f150) + f80 * f120 * f150;
+                                f90 = f90 * (1.0F - f150) + f90 * f120 * f150;
+                                f100 = f100 * (1.0F - f150) + f100 * f120 * f150;
+                            }
+        
+                            if (f80 > 1.0F) {
+                                f80 = 1.0F;
+                            }
+        
+                            if (f90 > 1.0F) {
+                                f90 = 1.0F;
+                            }
+        
+                            if (f100 > 1.0F) {
+                                f100 = 1.0F;
+                            }
+        
+                            float f160 = this.mc.gameSettings.gammaSetting;
+                            float f170 = 1.0F - f80;
+                            float f130 = 1.0F - f90;
+                            float f140 = 1.0F - f100;
+                            f170 = 1.0F - f170 * f170 * f170 * f170;
+                            f130 = 1.0F - f130 * f130 * f130 * f130;
+                            f140 = 1.0F - f140 * f140 * f140 * f140;
+                            f80 = f80 * (1.0F - f160) + f170 * f160;
+                            f90 = f90 * (1.0F - f160) + f130 * f160;
+                            f100 = f100 * (1.0F - f160) + f140 * f160;
+                            f80 = f80 * 0.96F + 0.03F;
+                            f90 = f90 * 0.96F + 0.03F;
+                            f100 = f100 * 0.96F + 0.03F;
+                            if (f80 > 1.0F) {
+                                f80 = 1.0F;
+                            }
+        
+                            if (f90 > 1.0F) {
+                                f90 = 1.0F;
+                            }
+        
+                            if (f100 > 1.0F) {
+                                f100 = 1.0F;
+                            }
+        
+                            if (f80 < 0.0F) {
+                                f80 = 0.0F;
+                            }
+        
+                            if (f90 < 0.0F) {
+                                f90 = 0.0F;
+                            }
+        
+                            if (f100 < 0.0F) {
+                                f100 = 0.0F;
+                            }
+        
+                            int j0 = 255;
+                            int k0 = (int) (f80 * 255.0F);
+                            int l0 = (int) (f90 * 255.0F);
+                            int i10 = (int) (f100 * 255.0F);
+                            this.lightmapColors[i0] = ambience.handleEvents() && ambience.getWorldColor() ? ambience.getColor().getRGB() : j0 << 24 | k0 << 16 | l0 << 8 | i10;
                         }
-
-                        if (f12 > 1.0F / f10) {
-                            f12 = 1.0F / f10;
-                        }
-
-                        f8 = f8 * (1.0F - f15) + f8 * f12 * f15;
-                        f9 = f9 * (1.0F - f15) + f9 * f12 * f15;
-                        f10 = f10 * (1.0F - f15) + f10 * f12 * f15;
+        
+                        this.lightmapTexture.updateDynamicTexture();
+                        this.lightmapUpdateNeeded = false;
+                        this.mc.mcProfiler.endSection();
                     }
-
-                    if (f8 > 1.0F) {
-                        f8 = 1.0F;
-                    }
-
-                    if (f9 > 1.0F) {
-                        f9 = 1.0F;
-                    }
-
-                    if (f10 > 1.0F) {
-                        f10 = 1.0F;
-                    }
-
-                    float f16 = this.mc.gameSettings.gammaSetting;
-                    float f17 = 1.0F - f8;
-                    float f13 = 1.0F - f9;
-                    float f14 = 1.0F - f10;
-                    f17 = 1.0F - f17 * f17 * f17 * f17;
-                    f13 = 1.0F - f13 * f13 * f13 * f13;
-                    f14 = 1.0F - f14 * f14 * f14 * f14;
-                    f8 = f8 * (1.0F - f16) + f17 * f16;
-                    f9 = f9 * (1.0F - f16) + f13 * f16;
-                    f10 = f10 * (1.0F - f16) + f14 * f16;
-                    f8 = f8 * 0.96F + 0.03F;
-                    f9 = f9 * 0.96F + 0.03F;
-                    f10 = f10 * 0.96F + 0.03F;
-                    if (f8 > 1.0F) {
-                        f8 = 1.0F;
-                    }
-
-                    if (f9 > 1.0F) {
-                        f9 = 1.0F;
-                    }
-
-                    if (f10 > 1.0F) {
-                        f10 = 1.0F;
-                    }
-
-                    if (f8 < 0.0F) {
-                        f8 = 0.0F;
-                    }
-
-                    if (f9 < 0.0F) {
-                        f9 = 0.0F;
-                    }
-
-                    if (f10 < 0.0F) {
-                        f10 = 0.0F;
-                    }
-
-                    int j = 255;
-                    int k = (int) (f8 * 255.0F);
-                    int l = (int) (f9 * 255.0F);
-                    int i1 = (int) (f10 * 255.0F);
-                    this.lightmapColors[i] = ambience.handleEvents() && ambience.getWorldColor() ? ambience.getColor().getRGB() : j << 24 | k << 16 | l << 8 | i1;
                 }
-
-                this.lightmapTexture.updateDynamicTexture();
-                this.lightmapUpdateNeeded = false;
-                this.mc.mcProfiler.endSection();
-            }
-        }
+        
+                return;
     }
 
     public float getNightVisionBrightness(EntityLivingBase entitylivingbaseIn, float partialTicks)
@@ -1339,10 +1337,10 @@ public class EntityRenderer implements IResourceManagerReloadListener
         {
             this.mc.gameSettings.showDebugProfilerChart = true;
         }
-
+    
         FreeLook.INSTANCE.restoreOriginalRotation();
-        FreeCam.INSTANCE.restoreOriginalPosition();
-    }
+                FreeCam.INSTANCE.restoreOriginalPosition();
+}
 
     public void renderStreamIndicator(float partialTicks)
     {
@@ -1463,7 +1461,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         EffectRenderer effectrenderer = this.mc.effectRenderer;
         boolean flag1 = this.isDrawBlockOutline();
         GlStateManager.enableCull();
-        this.mc.mcProfiler.endStartSection("clear");
+        this.mc.mcProfiler.endStartSection("clear");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
         if (flag)
         {
@@ -1482,7 +1492,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
             Shaders.clearRenderBuffer();
         }
 
-        this.mc.mcProfiler.endStartSection("camera");
+        this.mc.mcProfiler.endStartSection("camera");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         this.setupCameraTransform(partialTicks, pass);
 
         if (flag)
@@ -1491,9 +1513,33 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
 
         ActiveRenderInfo.updateRenderInfo(this.mc.thePlayer, this.mc.gameSettings.thirdPersonView == 2);
-        this.mc.mcProfiler.endStartSection("frustum");
+        this.mc.mcProfiler.endStartSection("frustum");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         ClippingHelper clippinghelper = ClippingHelperImpl.getInstance();
-        this.mc.mcProfiler.endStartSection("culling");
+        this.mc.mcProfiler.endStartSection("culling");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         clippinghelper.disabled = Config.isShaders() && !Shaders.isFrustumCulling();
         ICamera icamera = new Frustum(clippinghelper);
         Entity entity = this.mc.getRenderViewEntity();
@@ -1513,7 +1559,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         if ((Config.isSkyEnabled() || Config.isSunMoonEnabled() || Config.isStarsEnabled()) && !Shaders.isShadowPass)
         {
             this.setupFog(-1, partialTicks);
-            this.mc.mcProfiler.endStartSection("sky");
+            this.mc.mcProfiler.endStartSection("sky");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             GlStateManager.matrixMode(5889);
             GlStateManager.loadIdentity();
             Project.gluPerspective(this.getFOVModifier(partialTicks, true), (float)this.mc.displayWidth / (float)this.mc.displayHeight, 0.05F, this.clipDistance);
@@ -1549,11 +1607,35 @@ public class EntityRenderer implements IResourceManagerReloadListener
             this.renderCloudsCheck(renderglobal, partialTicks, pass);
         }
 
-        this.mc.mcProfiler.endStartSection("prepareterrain");
+        this.mc.mcProfiler.endStartSection("prepareterrain");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         this.setupFog(0, partialTicks);
         this.mc.getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
         RenderHelper.disableStandardItemLighting();
-        this.mc.mcProfiler.endStartSection("terrain_setup");
+        this.mc.mcProfiler.endStartSection("terrain_setup");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         this.checkLoadVisibleChunks(entity, partialTicks, icamera, this.mc.thePlayer.isSpectator());
 
         if (flag)
@@ -1567,20 +1649,68 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
         if (pass == 0 || pass == 2)
         {
-            this.mc.mcProfiler.endStartSection("updatechunks");
+            this.mc.mcProfiler.endStartSection("updatechunks");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             Lagometer.timerChunkUpload.start();
             this.mc.renderGlobal.updateChunks(finishTimeNano);
             Lagometer.timerChunkUpload.end();
         }
 
-        this.mc.mcProfiler.endStartSection("terrain");
+        this.mc.mcProfiler.endStartSection("terrain");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         Lagometer.timerTerrain.start();
 
         if (this.mc.gameSettings.ofSmoothFps && pass > 0)
         {
-            this.mc.mcProfiler.endStartSection("finish");
+            this.mc.mcProfiler.endStartSection("finish");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             GL11.glFinish();
-            this.mc.mcProfiler.endStartSection("terrain");
+            this.mc.mcProfiler.endStartSection("terrain");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
         }
 
         GlStateManager.matrixMode(5888);
@@ -1628,7 +1758,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
             GlStateManager.popMatrix();
             GlStateManager.pushMatrix();
             RenderHelper.enableStandardItemLighting();
-            this.mc.mcProfiler.endStartSection("entities");
+            this.mc.mcProfiler.endStartSection("entities");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
             if (Reflector.ForgeHooksClient_setRenderPass.exists())
             {
@@ -1652,7 +1794,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
             {
                 EntityPlayer entityplayer = (EntityPlayer)entity;
                 GlStateManager.disableAlpha();
-                this.mc.mcProfiler.endStartSection("outline");
+                this.mc.mcProfiler.endStartSection("outline");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
                 renderglobal.drawSelectionBox(entityplayer, this.mc.objectMouseOver, 0, partialTicks);
                 GlStateManager.enableAlpha();
             }
@@ -1665,7 +1819,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         {
             EntityPlayer entityplayer1 = (EntityPlayer)entity;
             GlStateManager.disableAlpha();
-            this.mc.mcProfiler.endStartSection("outline");
+            this.mc.mcProfiler.endStartSection("outline");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
             if ((!Reflector.ForgeHooksClient_onDrawBlockHighlight.exists() || !Reflector.callBoolean(Reflector.ForgeHooksClient_onDrawBlockHighlight, new Object[] {renderglobal, entityplayer1, this.mc.objectMouseOver, Integer.valueOf(0), entityplayer1.getHeldItem(), Float.valueOf(partialTicks)})) && !this.mc.gameSettings.hideGUI)
             {
@@ -1676,7 +1842,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
         if (!renderglobal.damagedBlocks.isEmpty())
         {
-            this.mc.mcProfiler.endStartSection("destroyProgress");
+            this.mc.mcProfiler.endStartSection("destroyProgress");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 1, 1, 0);
             this.mc.getTextureManager().getTexture(TextureMap.locationBlocksTexture).setBlurMipmap(false, false);
@@ -1691,7 +1869,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         if (!this.debugView)
         {
             this.enableLightmap();
-            this.mc.mcProfiler.endStartSection("litParticles");
+            this.mc.mcProfiler.endStartSection("litParticles");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
             if (flag)
             {
@@ -1701,7 +1891,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
             effectrenderer.renderLitParticles(entity, partialTicks);
             RenderHelper.disableStandardItemLighting();
             this.setupFog(0, partialTicks);
-            this.mc.mcProfiler.endStartSection("particles");
+            this.mc.mcProfiler.endStartSection("particles");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
             if (flag)
             {
@@ -1726,7 +1928,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
 
         GlStateManager.enableCull();
-        this.mc.mcProfiler.endStartSection("weather");
+        this.mc.mcProfiler.endStartSection("weather");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
         if (flag)
         {
@@ -1758,7 +1972,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         GlStateManager.depthMask(false);
         this.mc.getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
         GlStateManager.shadeModel(7425);
-        this.mc.mcProfiler.endStartSection("translucent");
+        this.mc.mcProfiler.endStartSection("translucent");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
 
         if (flag)
         {
@@ -1775,7 +2001,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
         if (Reflector.ForgeHooksClient_setRenderPass.exists() && !this.debugView)
         {
             RenderHelper.enableStandardItemLighting();
-            this.mc.mcProfiler.endStartSection("entities");
+            this.mc.mcProfiler.endStartSection("entities");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             Reflector.callVoid(Reflector.ForgeHooksClient_setRenderPass, new Object[] {Integer.valueOf(1)});
             this.mc.renderGlobal.renderEntities(entity, icamera, partialTicks);
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -1791,26 +2029,53 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
         if (entity.posY + (double)entity.getEyeHeight() >= 128.0D + (double)(this.mc.gameSettings.ofCloudsHeight * 128.0F))
         {
-            this.mc.mcProfiler.endStartSection("aboveClouds");
+            this.mc.mcProfiler.endStartSection("aboveClouds");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             this.renderCloudsCheck(renderglobal, partialTicks, pass);
         }
 
         if (Reflector.ForgeHooksClient_dispatchRenderLast.exists())
         {
-            this.mc.mcProfiler.endStartSection("forge_render_last");
+            this.mc.mcProfiler.endStartSection("forge_render_last");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
+
             Reflector.callVoid(Reflector.ForgeHooksClient_dispatchRenderLast, new Object[] {renderglobal, Float.valueOf(partialTicks)});
         }
 
-        this.mc.mcProfiler.endStartSection("hand");
+        this.mc.mcProfiler.endStartSection("hand");        /*
+                  This is done so it supports Opti-Fine while also supporting any mod that cancels the ForgeHooksClient.renderFirstPersonHand event.
+                  For example, OrangeMarshall's 1.7 Animations mod.
+                 */
+                if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
+                    FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
+                        FreeLook.INSTANCE.restoreOriginalRotation();
+                        EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
+                        FreeLook.INSTANCE.useModifiedRotation();
+                        return null;
+                    });
+                }
 
-        if (ClientUtils.INSTANCE.getProfilerName().equals("hand")) {
-            FreeLook.INSTANCE.runWithoutSavingRotations(() -> {
-                FreeLook.INSTANCE.restoreOriginalRotation();
-                EventManager.INSTANCE.call(new Render3DEvent(partialTicks));
-                FreeLook.INSTANCE.useModifiedRotation();
-                return null;
-            });
-        }
 
         if (this.renderHand && !Shaders.isShadowPass)
         {
@@ -2239,8 +2504,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
         this.fogColorBlue *= f13;
         double d1 = (entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)partialTicks) * world.provider.getVoidFogYFactor();
 
-        if (entity instanceof EntityLivingBase
-                && isBlindnessActive((EntityLivingBase) entity))
+        if (entity instanceof EntityLivingBase && ((EntityLivingBase)entity).isPotionActive(Potion.blindness))
         {
             int i = ((EntityLivingBase)entity).getActivePotionEffect(Potion.blindness).getDuration();
 
@@ -2348,8 +2612,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
         {
             GlStateManager.setFogDensity(f);
         }
-        else if (entity instanceof EntityLivingBase
-                && isBlindnessActive((EntityLivingBase) entity))
+        else if (entity instanceof EntityLivingBase && ((EntityLivingBase)entity).isPotionActive(Potion.blindness))
         {
             float f4 = 5.0F;
             int i = ((EntityLivingBase)entity).getActivePotionEffect(Potion.blindness).getDuration();
@@ -2447,17 +2710,6 @@ public class EntityRenderer implements IResourceManagerReloadListener
         GlStateManager.enableColorMaterial();
         GlStateManager.enableFog();
         GlStateManager.colorMaterial(1028, 4608);
-    }
-
-    private boolean isBlindnessActive(EntityLivingBase entity) {
-        if (entity != this.mc.thePlayer) {
-            return entity.isPotionActive(Potion.blindness);
-        }
-
-        AntiBlind module = AntiBlind.INSTANCE;
-
-        return (!module.handleEvents() || !module.getConfusionEffect())
-                && entity.isPotionActive(Potion.blindness);
     }
 
     private FloatBuffer setFogColorBuffer(float red, float green, float blue, float alpha)
@@ -2816,5 +3068,19 @@ public class EntityRenderer implements IResourceManagerReloadListener
             this.mc.gameSettings.ofChunkUpdates = i;
             this.mc.gameSettings.ofLazyChunkLoading = flag;
         }
+    }
+
+    private int injectCameraClip(int eight) {
+        return CameraClip.INSTANCE.handleEvents() ? 0 : eight;
+    }
+
+
+    /**
+     * Properly implement the confusion option from AntiBlind module
+     */
+    private boolean injectAntiBlindA(EntityPlayerSP instance, Potion potion) {
+        AntiBlind module = AntiBlind.INSTANCE;
+
+        return (!module.handleEvents() || !module.getConfusionEffect()) && instance.isPotionActive(potion);
     }
 }

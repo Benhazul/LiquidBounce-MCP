@@ -7,7 +7,6 @@ package net.ccbluex.liquidbounce.ui.client.clickgui.elements
 
 import net.ccbluex.liquidbounce.LiquidBounce.clickGui
 import net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui
-
 open class ButtonElement(
     open val displayName: String,
     val stateDependingColor: () -> Int = { Int.MAX_VALUE },

@@ -1,8 +1,6 @@
 package net.minecraft.entity.player;
 
 import java.util.concurrent.Callable;
-
-import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import net.minecraft.block.Block;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
@@ -17,11 +15,12 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ReportedException;
-
+import net.ccbluex.liquidbounce.utils.inventory.SilentHotbar;
 import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public class InventoryPlayer implements IInventory
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/entity/MixinInventoryPlayer.java
     public ItemStack[] mainInventory = new ItemStack[36];
     public ItemStack[] armorInventory = new ItemStack[4];
     public int currentItem;
@@ -36,11 +35,7 @@ public class InventoryPlayer implements IInventory
 
     public ItemStack getCurrentItem()
     {
-        int slot = (this == null || this.player == null || mc.thePlayer == null)
-                ? (this != null ? this.currentItem : 0)
-                : (this.player.getGameProfile().equals(mc.thePlayer.getGameProfile()) ? SilentHotbar.INSTANCE.getCurrentSlot() : this.currentItem);
-
-        return slot < 9 && slot >= 0 ? this.mainInventory[slot] : null;
+        return this.currentItem < 9 && this.currentItem >= 0 ? this.mainInventory[this.currentItem] : null;
     }
 
     public static int getHotbarSize()
@@ -311,15 +306,11 @@ public class InventoryPlayer implements IInventory
 
     public void decrementAnimations()
     {
-        int slot = (this == null || this.player == null || mc.thePlayer == null)
-                ? (this != null ? this.currentItem : 0)
-                : (this.player.getGameProfile().equals(mc.thePlayer.getGameProfile()) ? SilentHotbar.INSTANCE.getCurrentSlot() : this.currentItem);
-
         for (int i = 0; i < this.mainInventory.length; ++i)
         {
             if (this.mainInventory[i] != null)
             {
-                this.mainInventory[i].updateAnimation(this.player.worldObj, this.player, i, slot == i);
+                this.mainInventory[i].updateAnimation(this.player.worldObj, this.player, i, this.currentItem == i);
             }
         }
     }
@@ -497,15 +488,11 @@ public class InventoryPlayer implements IInventory
 
     public float getStrVsBlock(Block blockIn)
     {
-        int slot = (this == null || this.player == null || mc.thePlayer == null)
-                ? (this != null ? this.currentItem : 0)
-                : (this.player.getGameProfile().equals(mc.thePlayer.getGameProfile()) ? SilentHotbar.INSTANCE.getCurrentSlot() : this.currentItem);
-
         float f = 1.0F;
 
-        if (this.mainInventory[slot] != null)
+        if (this.mainInventory[this.currentItem] != null)
         {
-            f *= this.mainInventory[slot].getStrVsBlock(blockIn);
+            f *= this.mainInventory[this.currentItem].getStrVsBlock(blockIn);
         }
 
         return f;
@@ -610,11 +597,7 @@ public class InventoryPlayer implements IInventory
         }
         else
         {
-            int slot = (this == null || this.player == null || mc.thePlayer == null)
-                    ? (this != null ? this.currentItem : 0)
-                    : (this.player.getGameProfile().equals(mc.thePlayer.getGameProfile()) ? SilentHotbar.INSTANCE.getCurrentSlot() : this.currentItem);
-
-            ItemStack itemstack = this.getStackInSlot(slot);
+            ItemStack itemstack = this.getStackInSlot(this.currentItem);
             return itemstack != null ? itemstack.canHarvestBlock(blockIn) : false;
         }
     }

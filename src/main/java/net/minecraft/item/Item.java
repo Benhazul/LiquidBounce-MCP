@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-
-import net.ccbluex.liquidbounce.utils.rotation.Rotation;
-import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDirt;
 import net.minecraft.block.BlockDoublePlant;
@@ -24,7 +21,6 @@ import net.minecraft.block.BlockSilverfish;
 import net.minecraft.block.BlockStone;
 import net.minecraft.block.BlockStoneBrick;
 import net.minecraft.block.BlockWall;
-import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -47,8 +43,13 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+import net.ccbluex.liquidbounce.utils.rotation.Rotation;
+import net.ccbluex.liquidbounce.utils.rotation.RotationUtils;
+import net.minecraft.client.Minecraft;
 
-public class Item {
+public class Item
+{
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/item/MixinItem.java
     public static final RegistryNamespaced<ResourceLocation, Item> itemRegistry = new RegistryNamespaced();
     private static final Map<Block, Item> BLOCK_TO_ITEM = Maps.<Block, Item>newHashMap();
     protected static final UUID itemModifierUUID = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
@@ -61,263 +62,314 @@ public class Item {
     private Item containerItem;
     private String potionEffect;
     private String unlocalizedName;
+    protected boolean canRepair = true;
 
-    public static int getIdFromItem(Item itemIn) {
+    public boolean isRepairable()
+    {
+        return this.canRepair;
+    }
+
+    public Item setNoRepair()
+    {
+        this.canRepair = false;
+        return this;
+    }
+
+    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ)
+    {
+        return false;
+    }
+
+    public boolean doesSneakBypassUse(World world, BlockPos pos, EntityPlayer player)
+    {
+        return false;
+    }
+
+    public static int getIdFromItem(Item itemIn)
+    {
         return itemIn == null ? 0 : itemRegistry.getIDForObject(itemIn);
     }
 
-    public static Item getItemById(int id) {
-        return (Item) itemRegistry.getObjectById(id);
+    public static Item getItemById(int id)
+    {
+        return (Item)itemRegistry.getObjectById(id);
     }
 
-    public static Item getItemFromBlock(Block blockIn) {
-        return (Item) BLOCK_TO_ITEM.get(blockIn);
+    public static Item getItemFromBlock(Block blockIn)
+    {
+        return (Item)BLOCK_TO_ITEM.get(blockIn);
     }
 
-    public static Item getByNameOrId(String id) {
-        Item item = (Item) itemRegistry.getObject(new ResourceLocation(id));
+    public static Item getByNameOrId(String id)
+    {
+        Item item = (Item)itemRegistry.getObject(new ResourceLocation(id));
 
-        if (item == null) {
-            try {
+        if (item == null)
+        {
+            try
+            {
                 return getItemById(Integer.parseInt(id));
-            } catch (NumberFormatException var3) {
-
+            }
+            catch (NumberFormatException var3)
+            {
+                ;
             }
         }
 
         return item;
     }
 
-    public boolean updateItemStackNBT(NBTTagCompound nbt) {
+    public boolean updateItemStackNBT(NBTTagCompound nbt)
+    {
         return false;
     }
 
-    public Item setMaxStackSize(int maxStackSize) {
+    public Item setMaxStackSize(int maxStackSize)
+    {
         this.maxStackSize = maxStackSize;
         return this;
     }
 
-    public boolean onItemUse(ItemStack stack, EntityPlayer playerIn, World worldIn, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ) {
+    public boolean onItemUse(ItemStack stack, EntityPlayer playerIn, World worldIn, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ)
+    {
         return false;
     }
 
-    public float getStrVsBlock(ItemStack stack, Block state) {
+    public float getStrVsBlock(ItemStack stack, Block state)
+    {
         return 1.0F;
     }
 
-    public ItemStack onItemRightClick(ItemStack itemStackIn, World worldIn, EntityPlayer playerIn) {
+    public ItemStack onItemRightClick(ItemStack itemStackIn, World worldIn, EntityPlayer playerIn)
+    {
         return itemStackIn;
     }
 
-    public ItemStack onItemUseFinish(ItemStack stack, World worldIn, EntityPlayer playerIn) {
+    public ItemStack onItemUseFinish(ItemStack stack, World worldIn, EntityPlayer playerIn)
+    {
         return stack;
     }
 
-    public int getItemStackLimit() {
+    public int getItemStackLimit()
+    {
         return this.maxStackSize;
     }
 
-    public int getMetadata(int damage) {
+    public int getMetadata(int damage)
+    {
         return 0;
     }
 
-    public boolean getHasSubtypes() {
+    public boolean getHasSubtypes()
+    {
         return this.hasSubtypes;
     }
 
-    protected Item setHasSubtypes(boolean hasSubtypes) {
+    protected Item setHasSubtypes(boolean hasSubtypes)
+    {
         this.hasSubtypes = hasSubtypes;
         return this;
     }
 
-    public int getMaxDamage() {
+    public int getMaxDamage()
+    {
         return this.maxDamage;
     }
 
-    protected Item setMaxDamage(int maxDamageIn) {
+    protected Item setMaxDamage(int maxDamageIn)
+    {
         this.maxDamage = maxDamageIn;
         return this;
     }
 
-    public boolean isDamageable() {
+    public boolean isDamageable()
+    {
         return this.maxDamage > 0 && !this.hasSubtypes;
     }
 
-    public boolean hitEntity(ItemStack stack, EntityLivingBase target, EntityLivingBase attacker) {
+    public boolean hitEntity(ItemStack stack, EntityLivingBase target, EntityLivingBase attacker)
+    {
         return false;
     }
 
-    public boolean onBlockDestroyed(ItemStack stack, World worldIn, Block blockIn, BlockPos pos, EntityLivingBase playerIn) {
+    public boolean onBlockDestroyed(ItemStack stack, World worldIn, Block blockIn, BlockPos pos, EntityLivingBase playerIn)
+    {
         return false;
     }
 
-    public boolean canHarvestBlock(Block blockIn) {
+    public boolean canHarvestBlock(Block blockIn)
+    {
         return false;
     }
 
-    public boolean itemInteractionForEntity(ItemStack stack, EntityPlayer playerIn, EntityLivingBase target) {
+    public boolean itemInteractionForEntity(ItemStack stack, EntityPlayer playerIn, EntityLivingBase target)
+    {
         return false;
     }
 
-    public Item setFull3D() {
+    public Item setFull3D()
+    {
         this.bFull3D = true;
         return this;
     }
 
-    public boolean isFull3D() {
+    public boolean isFull3D()
+    {
         return this.bFull3D;
     }
 
-    public boolean shouldRotateAroundWhenRendering() {
+    public boolean shouldRotateAroundWhenRendering()
+    {
         return false;
     }
 
-    public Item setUnlocalizedName(String unlocalizedName) {
+    public Item setUnlocalizedName(String unlocalizedName)
+    {
         this.unlocalizedName = unlocalizedName;
         return this;
     }
 
-    public String getUnlocalizedNameInefficiently(ItemStack stack) {
+    public String getUnlocalizedNameInefficiently(ItemStack stack)
+    {
         String s = this.getUnlocalizedName(stack);
         return s == null ? "" : StatCollector.translateToLocal(s);
     }
 
-    public String getUnlocalizedName() {
+    public String getUnlocalizedName()
+    {
         return "item." + this.unlocalizedName;
     }
 
-    public String getUnlocalizedName(ItemStack stack) {
+    public String getUnlocalizedName(ItemStack stack)
+    {
         return "item." + this.unlocalizedName;
     }
 
-    public Item setContainerItem(Item containerItem) {
+    public Item setContainerItem(Item containerItem)
+    {
         this.containerItem = containerItem;
         return this;
     }
 
-    public boolean getShareTag() {
+    public boolean getShareTag()
+    {
         return true;
     }
 
-    public Item getContainerItem() {
+    public Item getContainerItem()
+    {
         return this.containerItem;
     }
 
-    public boolean hasContainerItem() {
+    public boolean hasContainerItem()
+    {
         return this.containerItem != null;
     }
 
-    public int getColorFromItemStack(ItemStack stack, int renderPass) {
+    public int getColorFromItemStack(ItemStack stack, int renderPass)
+    {
         return 16777215;
     }
 
-    public void onUpdate(ItemStack stack, World worldIn, Entity entityIn, int itemSlot, boolean isSelected) {
+    public void onUpdate(ItemStack stack, World worldIn, Entity entityIn, int itemSlot, boolean isSelected)
+    {
     }
 
-    public void onCreated(ItemStack stack, World worldIn, EntityPlayer playerIn) {
+    public void onCreated(ItemStack stack, World worldIn, EntityPlayer playerIn)
+    {
     }
 
-    public boolean isMap() {
+    public boolean isMap()
+    {
         return false;
     }
 
-    public EnumAction getItemUseAction(ItemStack stack) {
+    public EnumAction getItemUseAction(ItemStack stack)
+    {
         return EnumAction.NONE;
     }
 
-    public int getMaxItemUseDuration(ItemStack stack) {
+    public int getMaxItemUseDuration(ItemStack stack)
+    {
         return 0;
     }
 
-    public void onPlayerStoppedUsing(ItemStack stack, World worldIn, EntityPlayer playerIn, int timeLeft) {
+    public void onPlayerStoppedUsing(ItemStack stack, World worldIn, EntityPlayer playerIn, int timeLeft)
+    {
     }
 
-    protected Item setPotionEffect(String potionEffect) {
+    protected Item setPotionEffect(String potionEffect)
+    {
         this.potionEffect = potionEffect;
         return this;
     }
 
-    public String getPotionEffect(ItemStack stack) {
+    public String getPotionEffect(ItemStack stack)
+    {
         return this.potionEffect;
     }
 
-    public boolean isPotionIngredient(ItemStack stack) {
+    public boolean isPotionIngredient(ItemStack stack)
+    {
         return this.getPotionEffect(stack) != null;
     }
 
-    public void addInformation(ItemStack stack, EntityPlayer playerIn, List<String> tooltip, boolean advanced) {
+    public void addInformation(ItemStack stack, EntityPlayer playerIn, List<String> tooltip, boolean advanced)
+    {
     }
 
-    public String getItemStackDisplayName(ItemStack stack) {
+    public String getItemStackDisplayName(ItemStack stack)
+    {
         return ("" + StatCollector.translateToLocal(this.getUnlocalizedNameInefficiently(stack) + ".name")).trim();
     }
 
-    public boolean hasEffect(ItemStack stack) {
+    public boolean hasEffect(ItemStack stack)
+    {
         return stack.isItemEnchanted();
     }
 
-    public EnumRarity getRarity(ItemStack stack) {
+    public EnumRarity getRarity(ItemStack stack)
+    {
         return stack.isItemEnchanted() ? EnumRarity.RARE : EnumRarity.COMMON;
     }
 
-    public boolean isItemTool(ItemStack stack) {
+    public boolean isItemTool(ItemStack stack)
+    {
         return this.getItemStackLimit() == 1 && this.isDamageable();
     }
 
-    protected MovingObjectPosition getMovingObjectPositionFromPlayer(World worldIn, EntityPlayer playerIn, boolean useLiquids) {
-        float f = getCustomRotationPitch(playerIn);
-        float f1 = getCustomRotationYaw(playerIn);
+    protected MovingObjectPosition getMovingObjectPositionFromPlayer(World worldIn, EntityPlayer playerIn, boolean useLiquids)
+    {
+        float f = hookCurrentRotationPitch(playerIn);
+        float f1 = hookCurrentRotationYaw(playerIn);
         double d0 = playerIn.posX;
-        double d1 = playerIn.posY + (double) playerIn.getEyeHeight();
+        double d1 = playerIn.posY + (double)playerIn.getEyeHeight();
         double d2 = playerIn.posZ;
         Vec3 vec3 = new Vec3(d0, d1, d2);
-        float f2 = MathHelper.cos(-f1 * 0.017453292F - (float) Math.PI);
-        float f3 = MathHelper.sin(-f1 * 0.017453292F - (float) Math.PI);
+        float f2 = MathHelper.cos(-f1 * 0.017453292F - (float)Math.PI);
+        float f3 = MathHelper.sin(-f1 * 0.017453292F - (float)Math.PI);
         float f4 = -MathHelper.cos(-f * 0.017453292F);
         float f5 = MathHelper.sin(-f * 0.017453292F);
         float f6 = f3 * f4;
         float f7 = f2 * f4;
         double d3 = 5.0D;
-        Vec3 vec31 = vec3.addVector((double) f6 * d3, (double) f5 * d3, (double) f7 * d3);
+        Vec3 vec31 = vec3.addVector((double)f6 * d3, (double)f5 * d3, (double)f7 * d3);
         return worldIn.rayTraceBlocks(vec3, vec31, useLiquids, !useLiquids, false);
     }
 
-    private float getCustomRotationYaw(EntityPlayer player) {
-        Rotation rotation = RotationUtils.INSTANCE.getCurrentRotation();
-
-        if (player.getGameProfile() != Minecraft.getMinecraft().thePlayer.getGameProfile() || rotation == null) {
-            return player.rotationYaw;
-        }
-        return rotation.getYaw();
-    }
-
-    private float getCustomRotationPitch(EntityPlayer player) {
-        Rotation rotation = RotationUtils.INSTANCE.getCurrentRotation();
-
-        if (player.getGameProfile() != Minecraft.getMinecraft().thePlayer.getGameProfile() || rotation == null) {
-            return player.rotationPitch;
-        }
-        return rotation.getPitch();
-    }
-
-    public int getItemEnchantability() {
+    public int getItemEnchantability()
+    {
         return 0;
     }
 
-    public void getSubItems(Item itemIn, CreativeTabs tab, List<ItemStack> subItems) {
+    public void getSubItems(Item itemIn, CreativeTabs tab, List<ItemStack> subItems)
+    {
         subItems.add(new ItemStack(itemIn, 1, 0));
     }
 
-    public CreativeTabs getCreativeTab() {
+    public CreativeTabs getCreativeTab()
+    {
         return this.tabToDisplayOn;
-    }
-
-    public boolean doesSneakBypassUse(World p_doesSneakBypassUse_1_, BlockPos p_doesSneakBypassUse_2_, EntityPlayer p_doesSneakBypassUse_3_) {
-        return false;
-    }
-
-    public boolean onItemUseFirst(ItemStack p_onItemUseFirst_1_, EntityPlayer p_onItemUseFirst_2_, World p_onItemUseFirst_3_, BlockPos p_onItemUseFirst_4_, EnumFacing p_onItemUseFirst_5_, float p_onItemUseFirst_6_, float p_onItemUseFirst_7_, float p_onItemUseFirst_8_) {
-        return false;
     }
 
     public Item setCreativeTab(CreativeTabs tab)
@@ -858,5 +910,30 @@ public class Item {
         {
             return this == WOOD ? Item.getItemFromBlock(Blocks.planks) : (this == STONE ? Item.getItemFromBlock(Blocks.cobblestone) : (this == GOLD ? Items.gold_ingot : (this == IRON ? Items.iron_ingot : (this == EMERALD ? Items.diamond : null))));
         }
+    }
+
+
+    /**
+     * Rotation modification injections. Replaces actual rotation with the current rotation to synchronize placements client-side.
+     */
+    private float hookCurrentRotationYaw(EntityPlayer instance) {
+        Rotation rotation = RotationUtils.INSTANCE.getCurrentRotation();
+
+        if (instance.getGameProfile() != Minecraft.getMinecraft().thePlayer.getGameProfile() || rotation == null) {
+            return instance.rotationYaw;
+        }
+
+        return rotation.getYaw();
+    }
+
+
+    private float hookCurrentRotationPitch(EntityPlayer instance) {
+        Rotation rotation = RotationUtils.INSTANCE.getCurrentRotation();
+
+        if (instance.getGameProfile() != Minecraft.getMinecraft().thePlayer.getGameProfile() || rotation == null) {
+            return instance.rotationPitch;
+        }
+
+        return rotation.getPitch();
     }
 }

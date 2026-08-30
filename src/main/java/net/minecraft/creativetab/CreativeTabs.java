@@ -12,7 +12,7 @@ import net.minecraft.item.ItemStack;
 
 public abstract class CreativeTabs
 {
-    public static final CreativeTabs[] creativeTabArray = new CreativeTabs[12];
+    public static CreativeTabs[] creativeTabArray = new CreativeTabs[12];
     public static final CreativeTabs tabBlock = new CreativeTabs(0, "buildingBlocks")
     {
         public Item getTabIconItem()
@@ -109,8 +109,22 @@ public abstract class CreativeTabs
     private EnumEnchantmentType[] enchantmentTypes;
     private ItemStack iconItemStack;
 
+    public CreativeTabs(String label)
+    {
+        this(getNextID(), label);
+    }
+
     public CreativeTabs(int index, String label)
     {
+        if (index >= creativeTabArray.length)
+        {
+            CreativeTabs[] tmp = new CreativeTabs[index + 1];
+            for (int x = 0; x < creativeTabArray.length; x++)
+            {
+                tmp[x] = creativeTabArray[x];
+            }
+            creativeTabArray = tmp;
+        }
         this.tabIndex = index;
         this.tabLabel = label;
         creativeTabArray[index] = this;
@@ -260,5 +274,29 @@ public abstract class CreativeTabs
                 }
             }
         }
+    }
+
+    public int getTabPage()
+    {
+        if (this.tabIndex > 11)
+        {
+            return ((this.tabIndex - 12) / 10) + 1;
+        }
+        return 0;
+    }
+
+    public static int getNextID()
+    {
+        return creativeTabArray.length;
+    }
+
+    public boolean hasSearchBar()
+    {
+        return this.tabIndex == tabAllSearch.tabIndex;
+    }
+
+    public int getSearchbarWidth()
+    {
+        return 89;
     }
 }

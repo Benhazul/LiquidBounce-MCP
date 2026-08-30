@@ -32,11 +32,6 @@ import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.crypto.SecretKey;
-
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.event.EventState;
-import net.ccbluex.liquidbounce.event.PacketEvent;
-import net.ccbluex.liquidbounce.utils.client.PPSCounter;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.CryptManager;
@@ -53,9 +48,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.EventState;
+import net.ccbluex.liquidbounce.event.PacketEvent;
+import net.ccbluex.liquidbounce.utils.client.PPSCounter;
 
 public class NetworkManager extends SimpleChannelInboundHandler<Packet>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/network/MixinNetworkManager.java
     private static final Logger logger = LogManager.getLogger();
     public static final Marker logMarkerNetwork = MarkerManager.getMarker("NETWORK");
     public static final Marker logMarkerPackets = MarkerManager.getMarker("NETWORK_PACKETS", logMarkerNetwork);
@@ -140,7 +140,8 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
         this.closeChannel(chatcomponenttranslation);
     }
 
-    protected void channelRead0(ChannelHandlerContext p_channelRead0_1_, Packet p_channelRead0_2_) throws Exception {
+    protected void channelRead0(ChannelHandlerContext p_channelRead0_1_, Packet p_channelRead0_2_) throws Exception
+    {
         final PacketEvent event = new PacketEvent(p_channelRead0_2_, EventState.RECEIVE);
         EventManager.INSTANCE.call(event);
 
@@ -163,7 +164,6 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
         }
     }
 
-
     public void setNetHandler(INetHandler handler)
     {
         Validate.notNull(handler, "packetListener", new Object[0]);
@@ -176,8 +176,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
         final PacketEvent event = new PacketEvent(packetIn, EventState.SEND);
         EventManager.INSTANCE.call(event);
 
-        if (event.isCancelled())
-        {
+        if (event.isCancelled()) {
             return;
         }
 
@@ -186,7 +185,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
         if (this.isChannelOpen())
         {
             this.flushOutboundQueue();
-            this.dispatchPacket(packetIn, (GenericFutureListener<? extends Future<? super Void>>[])null);
+            this.dispatchPacket(packetIn, (GenericFutureListener <? extends Future <? super Void >> [])null);
         }
         else
         {
@@ -194,12 +193,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
 
             try
             {
-                this.outboundPacketsQueue.add(
-                        new NetworkManager.InboundHandlerTuplePacketListener(
-                                packetIn,
-                                (GenericFutureListener[])null
-                        )
-                );
+                this.outboundPacketsQueue.add(new NetworkManager.InboundHandlerTuplePacketListener(packetIn, (GenericFutureListener[])null));
             }
             finally
             {
@@ -481,8 +475,8 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet>
 
     public static class InboundHandlerTuplePacketListener
     {
-        public final Packet packet;
-        public final GenericFutureListener <? extends Future <? super Void >> [] futureListeners;
+        private final Packet packet;
+        private final GenericFutureListener <? extends Future <? super Void >> [] futureListeners;
 
         public InboundHandlerTuplePacketListener(Packet inPacket, GenericFutureListener <? extends Future <? super Void >> ... inFutureListeners)
         {

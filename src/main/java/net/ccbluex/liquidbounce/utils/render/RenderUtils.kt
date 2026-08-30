@@ -24,13 +24,9 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityLivingBase
 import net.minecraft.util.*
+import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GL11.glEndList
-import org.lwjgl.opengl.GL11.glNewList
-import org.lwjgl.opengl.GL11.glBegin
-import org.lwjgl.opengl.GL11.glEnd
 import org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE
-import org.lwjgl.opengl.GL11.glTexParameteri
 import org.lwjgl.opengl.GL14.glBlendFuncSeparate
 import java.awt.Color
 import java.awt.Graphics2D
@@ -125,30 +121,30 @@ object RenderUtils : MinecraftInstance {
     }
 
     init {
-        glNewList(DISPLAY_LISTS_2D[0], GL_COMPILE)
+        GL11.glNewList(DISPLAY_LISTS_2D[0], GL_COMPILE)
         quickDrawRect(-7f, 2f, -4f, 3f)
         quickDrawRect(4f, 2f, 7f, 3f)
         quickDrawRect(-7f, 0.5f, -6f, 3f)
         quickDrawRect(6f, 0.5f, 7f, 3f)
-        glEndList()
-        glNewList(DISPLAY_LISTS_2D[1], GL_COMPILE)
+        GL11.glEndList()
+        GL11.glNewList(DISPLAY_LISTS_2D[1], GL_COMPILE)
         quickDrawRect(-7f, 3f, -4f, 3.3f)
         quickDrawRect(4f, 3f, 7f, 3.3f)
         quickDrawRect(-7.3f, 0.5f, -7f, 3.3f)
         quickDrawRect(7f, 0.5f, 7.3f, 3.3f)
-        glEndList()
-        glNewList(DISPLAY_LISTS_2D[2], GL_COMPILE)
+        GL11.glEndList()
+        GL11.glNewList(DISPLAY_LISTS_2D[2], GL_COMPILE)
         quickDrawRect(4f, -20f, 7f, -19f)
         quickDrawRect(-7f, -20f, -4f, -19f)
         quickDrawRect(6f, -20f, 7f, -17.5f)
         quickDrawRect(-7f, -20f, -6f, -17.5f)
-        glEndList()
-        glNewList(DISPLAY_LISTS_2D[3], GL_COMPILE)
+        GL11.glEndList()
+        GL11.glNewList(DISPLAY_LISTS_2D[3], GL_COMPILE)
         quickDrawRect(7f, -20f, 7.3f, -17.5f)
         quickDrawRect(-7.3f, -20f, -7f, -17.5f)
         quickDrawRect(4f, -20.3f, 7.3f, -20f)
         quickDrawRect(-7.3f, -20.3f, -4f, -20f)
-        glEndList()
+        GL11.glEndList()
     }
 
     @JvmStatic
@@ -378,7 +374,7 @@ object RenderUtils : MinecraftInstance {
         glAlphaFunc(GL_GREATER, 0.0f)
         mc.entityRenderer.disableLightmap()
 
-        glBegin(GL_TRIANGLE_FAN)
+        GL11.glBegin(GL_TRIANGLE_FAN)
         circlePoints.forEachIndexed { index, pos ->
             val innerX = pos.x * radius
             val innerZ = pos.z * radius
@@ -389,9 +385,9 @@ object RenderUtils : MinecraftInstance {
                 position.xCoord - renderX + innerX, position.yCoord - renderY, position.zCoord - renderZ + innerZ
             )
         }
-        glEnd()
+        GL11.glEnd()
 
-        glBegin(GL_LINE_LOOP)
+        GL11.glBegin(GL_LINE_LOOP)
         circlePoints.forEachIndexed { index, pos ->
             val outerX = pos.x * radius
             val outerZ = pos.z * radius
@@ -402,7 +398,7 @@ object RenderUtils : MinecraftInstance {
                 position.xCoord - renderX + outerX, position.yCoord - renderY, position.zCoord - renderZ + outerZ
             )
         }
-        glEnd()
+        GL11.glEnd()
 
         glEnable(GL_CULL_FACE)
         glEnable(GL_DEPTH_TEST)
@@ -1190,7 +1186,7 @@ object RenderUtils : MinecraftInstance {
         glColor(Color.WHITE)
         glEnable(GL_LINE_SMOOTH)
         glLineWidth(2f)
-        glBegin(GL_LINE_STRIP)
+        GL11.glBegin(GL_LINE_STRIP)
         var i = end.toFloat()
         while (i >= start) {
             val rad = i.toRadians()
@@ -1199,7 +1195,7 @@ object RenderUtils : MinecraftInstance {
             )
             i -= 360 / 90f
         }
-        glEnd()
+        GL11.glEnd()
         glDisable(GL_LINE_SMOOTH)
         enableTexture2D()
         disableBlend()
@@ -1215,7 +1211,7 @@ object RenderUtils : MinecraftInstance {
         glDisable(GL_TEXTURE_2D)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_LINE_SMOOTH)
-        glBegin(GL_TRIANGLE_FAN)
+        GL11.glBegin(GL_TRIANGLE_FAN)
         for (i in 0 until sections) {
             x = (radius * sin(i * dAngle)).toFloat()
             y = (radius * cos(i * dAngle)).toFloat()
@@ -1223,7 +1219,7 @@ object RenderUtils : MinecraftInstance {
             glVertex2f(xx + x, yy + y)
         }
         resetColor()
-        glEnd()
+        GL11.glEnd()
         glPopAttrib()
     }
 
@@ -1426,7 +1422,7 @@ object RenderUtils : MinecraftInstance {
         glPushMatrix()
         glDisable(GL_TEXTURE_2D)
         glColor(color)
-        glBegin(GL_TRIANGLE_FAN)
+        GL11.glBegin(GL_TRIANGLE_FAN)
 
         glVertex2f(x.toFloat(), y.toFloat())
 
@@ -1436,7 +1432,7 @@ object RenderUtils : MinecraftInstance {
         }
 
         glColor4f(1f, 1f, 1f, 1f)
-        glEnd()
+        GL11.glEnd()
         glEnable(GL_TEXTURE_2D)
         glPopMatrix()
     }
@@ -1466,10 +1462,10 @@ object RenderUtils : MinecraftInstance {
     fun drawLine(x: Double, y: Double, x1: Double, y1: Double, width: Float) {
         glDisable(GL_TEXTURE_2D)
         glLineWidth(width)
-        glBegin(GL_LINES)
+        GL11.glBegin(GL_LINES)
         glVertex2d(x, y)
         glVertex2d(x1, y1)
-        glEnd()
+        GL11.glEnd()
         glEnable(GL_TEXTURE_2D)
     }
 
@@ -1599,10 +1595,10 @@ object RenderUtils : MinecraftInstance {
 
         glBindTexture(GL_TEXTURE_2D, textureID)
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        GL11.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        GL11.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        GL11.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        GL11.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer)
 
@@ -1627,12 +1623,12 @@ object RenderUtils : MinecraftInstance {
 
         glTranslatef(x.toFloat(), y.toFloat(), 0.0f)
 
-        glBegin(GL_QUADS)
+        GL11.glBegin(GL_QUADS)
         glTexCoord2f(0.0f, 0.0f); glVertex2f(0.0f, 0.0f) // Bottom-left corner
         glTexCoord2f(1.0f, 0.0f); glVertex2f(width.toFloat(), 0.0f) // Bottom-right corner
         glTexCoord2f(1.0f, 1.0f); glVertex2f(width.toFloat(), height.toFloat()) // Top-right corner
         glTexCoord2f(0.0f, 1.0f); glVertex2f(0.0f, height.toFloat()) // Top-left corner
-        glEnd()
+        GL11.glEnd()
 
         glDisable(GL_TEXTURE_2D)
         glDisable(GL_BLEND)

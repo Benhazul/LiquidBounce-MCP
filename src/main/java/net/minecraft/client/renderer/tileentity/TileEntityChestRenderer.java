@@ -1,8 +1,6 @@
 package net.minecraft.client.renderer.tileentity;
 
 import java.util.Calendar;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.Chams;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockChest;
 import net.minecraft.client.model.ModelChest;
@@ -10,11 +8,12 @@ import net.minecraft.client.model.ModelLargeChest;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.ResourceLocation;
-
+import net.ccbluex.liquidbounce.features.module.modules.render.Chams;
 import static org.lwjgl.opengl.GL11.*;
 
 public class TileEntityChestRenderer extends TileEntitySpecialRenderer<TileEntityChest>
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinTileEntityChestRenderer.java
     private static final ResourceLocation textureTrappedDouble = new ResourceLocation("textures/entity/chest/trapped_double.png");
     private static final ResourceLocation textureChristmasDouble = new ResourceLocation("textures/entity/chest/christmas_double.png");
     private static final ResourceLocation textureNormalDouble = new ResourceLocation("textures/entity/chest/normal_double.png");
@@ -38,11 +37,11 @@ public class TileEntityChestRenderer extends TileEntitySpecialRenderer<TileEntit
     public void renderTileEntityAt(TileEntityChest te, double x, double y, double z, float partialTicks, int destroyStage)
     {
         final Chams chams = Chams.INSTANCE;
-
-        if (chams.handleEvents() && chams.getChests()) {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1f, -1000000F);
-        }
+        
+                if (chams.handleEvents() && chams.getChests()) {
+                    glEnable(GL_POLYGON_OFFSET_FILL);
+                    glPolygonOffset(1f, -1000000F);
+                }
 
         GlStateManager.enableDepth();
         GlStateManager.depthFunc(515);
@@ -206,10 +205,12 @@ public class TileEntityChestRenderer extends TileEntitySpecialRenderer<TileEntit
                 GlStateManager.matrixMode(5888);
             }
         }
-
-        if (chams.handleEvents() && chams.getChests()) {
-            glPolygonOffset(1f, 1000000F);
-            glDisable(GL_POLYGON_OFFSET_FILL);
-        }
-    }
+    
+        final Chams chams0 = Chams.INSTANCE;
+        
+                if (chams0.handleEvents() && chams0.getChests()) {
+                    glPolygonOffset(1f, 1000000F);
+                    glDisable(GL_POLYGON_OFFSET_FILL);
+                }
+}
 }

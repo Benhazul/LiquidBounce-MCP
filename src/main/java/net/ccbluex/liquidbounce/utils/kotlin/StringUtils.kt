@@ -4,7 +4,6 @@
  * https://github.com/CCBlueX/LiquidBounce/
  */
 package net.ccbluex.liquidbounce.utils.kotlin
-
 object StringUtils {
     fun toCompleteString(args: Array<String>, start: Int) =
         if (args.size <= start) ""

@@ -20,7 +20,7 @@ class ScriptTab(private val tabObject: JSObject)
                 if (CreativeTabs.creativeTabArray[i] == null)
                     return i
             }
-            throw IllegalStateException("No free CreativeTabs slots")
+            return CreativeTabs.getNextID()
         }
     }
 

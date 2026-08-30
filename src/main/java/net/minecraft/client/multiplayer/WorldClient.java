@@ -4,8 +4,6 @@ import com.google.common.collect.Sets;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.TrueSight;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -41,9 +39,11 @@ import net.optifine.CustomGuis;
 import net.optifine.DynamicLights;
 import net.optifine.override.PlayerControllerOF;
 import net.optifine.reflect.Reflector;
+import net.ccbluex.liquidbounce.features.module.modules.render.TrueSight;
 
 public class WorldClient extends World
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/world/MixinWorldClient.java
     private NetHandlerPlayClient sendQueue;
     private ChunkProviderClient clientChunkProvider;
     private final Set<Entity> entityList = Sets.<Entity>newHashSet();
@@ -280,11 +280,7 @@ public class WorldClient extends World
         int i = 16;
         Random random = new Random();
         ItemStack itemstack = this.mc.thePlayer.getHeldItem();
-
-        boolean flag = this.mc.playerController.getCurrentGameType() == WorldSettings.GameType.CREATIVE
-                && itemstack != null
-                && Block.getBlockFromItem(itemstack.getItem()) == Blocks.barrier;
-
+        boolean flag = this.mc.playerController.getCurrentGameType() == WorldSettings.GameType.CREATIVE && itemstack != null && Block.getBlockFromItem(itemstack.getItem()) == Blocks.barrier;
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
 
         for (int j = 0; j < 1000; ++j)
@@ -292,29 +288,18 @@ public class WorldClient extends World
             int k = posX + this.rand.nextInt(i) - this.rand.nextInt(i);
             int l = posY + this.rand.nextInt(i) - this.rand.nextInt(i);
             int i1 = posZ + this.rand.nextInt(i) - this.rand.nextInt(i);
-
             blockpos$mutableblockpos.set(k, l, i1);
             IBlockState iblockstate = this.getBlockState(blockpos$mutableblockpos);
-
             iblockstate.getBlock().randomDisplayTick(this, blockpos$mutableblockpos, iblockstate, random);
-
             TrueSight trueSight = TrueSight.INSTANCE;
-            flag = flag || (trueSight.handleEvents() && trueSight.getBarriers());
+            flag = flag || trueSight.handleEvents() && trueSight.getBarriers();
 
             if (flag && iblockstate.getBlock() == Blocks.barrier)
             {
-                this.spawnParticle(
-                        EnumParticleTypes.BARRIER,
-                        (double) k + 0.5D,
-                        (double) l + 0.5D,
-                        (double) i1 + 0.5D,
-                        0.0D, 0.0D, 0.0D,
-                        new int[0]
-                );
+                this.spawnParticle(EnumParticleTypes.BARRIER, (double)((float)k + 0.5F), (double)((float)l + 0.5F), (double)((float)i1 + 0.5F), 0.0D, 0.0D, 0.0D, new int[0]);
             }
         }
     }
-
 
     public void removeAllEntities()
     {
@@ -487,4 +472,13 @@ public class WorldClient extends World
     {
         return this.playerUpdate;
     }
+
+
+    // Mixin Porter manual: @ModifyVariable requiere revision manual
+    // @ModifyVariable(method = "doVoidFogParticles", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;randomDisplayTick(Lnet/minecraft/world/World;Lnet/minecraft/util/BlockPos;Lnet/minecraft/block/state/IBlockState;Ljava/util/Random;)V", shift = At.Shift.AFTER), ordinal = 0)
+    //     private boolean handleBarriers(final boolean flag) {
+    //         final TrueSight trueSight = TrueSight.INSTANCE;
+    // 
+    //         return flag || trueSight.handleEvents() && trueSight.getBarriers();
+    //     }
 }

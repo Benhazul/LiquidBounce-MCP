@@ -32,7 +32,6 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-
 import net.ccbluex.liquidbounce.event.BlockBBEvent;
 import net.ccbluex.liquidbounce.event.EventManager;
 import net.ccbluex.liquidbounce.features.module.modules.combat.Criticals;
@@ -43,6 +42,7 @@ import net.ccbluex.liquidbounce.features.module.modules.world.NoSlowBreak;
 
 public class Block
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlock.java
     private static final ResourceLocation AIR_ID = new ResourceLocation("air");
     public static final RegistryNamespacedDefaultedByKey<ResourceLocation, Block> blockRegistry = new RegistryNamespacedDefaultedByKey(AIR_ID);
     public static final ObjectIntIdentityMap<IBlockState> BLOCK_STATE_IDS = new ObjectIntIdentityMap();
@@ -350,6 +350,26 @@ public class Block
         return this.isBlockContainer;
     }
 
+    public boolean hasTileEntity(IBlockState state)
+    {
+        return this.hasTileEntity();
+    }
+
+    public int getLightOpacity(IBlockAccess world, BlockPos pos)
+    {
+        return this.getLightOpacity();
+    }
+
+    public int getLightValue(IBlockAccess world, BlockPos pos)
+    {
+        return this.getLightValue();
+    }
+
+    public boolean isLadder(IBlockAccess world, BlockPos pos, EntityLivingBase entity)
+    {
+        return this == net.minecraft.init.Blocks.ladder;
+    }
+
     protected final void setBlockBounds(float minX, float minY, float minZ, float maxX, float maxY, float maxZ)
     {
         this.minX = (double)minX;
@@ -379,10 +399,10 @@ public class Block
 
     public boolean shouldSideBeRendered(IBlockAccess worldIn, BlockPos pos, EnumFacing side)
     {
-        if (XRay.INSTANCE
-                .handleEvents()) {
-            return XRay.INSTANCE.getXrayBlocks().contains(this);
-        }
+        if (XRay.INSTANCE.handleEvents()) {
+                    return XRay.INSTANCE.getXrayBlocks().contains((Block) (Object) this);
+                }
+
         return side == EnumFacing.DOWN && this.minY > 0.0D ? true : (side == EnumFacing.UP && this.maxY < 1.0D ? true : (side == EnumFacing.NORTH && this.minZ > 0.0D ? true : (side == EnumFacing.SOUTH && this.maxZ < 1.0D ? true : (side == EnumFacing.WEST && this.minX > 0.0D ? true : (side == EnumFacing.EAST && this.maxX < 1.0D ? true : !worldIn.getBlockState(pos).getBlock().isOpaqueCube())))));
     }
 
@@ -396,17 +416,17 @@ public class Block
         return new AxisAlignedBB((double)pos.getX() + this.minX, (double)pos.getY() + this.minY, (double)pos.getZ() + this.minZ, (double)pos.getX() + this.maxX, (double)pos.getY() + this.maxY, (double)pos.getZ() + this.maxZ);
     }
 
-    public void addCollisionBoxesToList(World worldIn, BlockPos pos, IBlockState state, AxisAlignedBB mask, List<AxisAlignedBB> list, Entity collidingEntity)
-    {
-        AxisAlignedBB axisalignedbb = this.getCollisionBoundingBox(worldIn, pos, state);
-        BlockBBEvent blockBBEvent = new BlockBBEvent(pos, this, axisalignedbb);
+    /**
+     * @author CCBlueX
+     */
+    public void addCollisionBoxesToList(World worldIn, BlockPos pos, IBlockState state, AxisAlignedBB mask, List<AxisAlignedBB> list, Entity collidingEntity) {
+        AxisAlignedBB axisalignedbb = getCollisionBoundingBox(worldIn, pos, state);
+        BlockBBEvent blockBBEvent = new BlockBBEvent(pos, blockState.getBlock(), axisalignedbb);
         EventManager.INSTANCE.call(blockBBEvent);
+
         axisalignedbb = blockBBEvent.getBoundingBox();
 
-        if (axisalignedbb != null && mask.intersectsWith(axisalignedbb))
-        {
-            list.add(axisalignedbb);
-        }
+        if (axisalignedbb != null && mask.intersectsWith(axisalignedbb)) list.add(axisalignedbb);
     }
 
     public AxisAlignedBB getCollisionBoundingBox(World worldIn, BlockPos pos, IBlockState state)
@@ -427,9 +447,11 @@ public class Block
     public boolean isCollidable()
     {
         final GhostHand ghostHand = GhostHand.INSTANCE;
-        if (ghostHand.handleEvents() && !(ghostHand.getBlock() == Block.getIdFromBlock(this))) {
-            return false;
-        }
+        
+                if (ghostHand.handleEvents() && !(ghostHand.getBlock() == Block.getIdFromBlock((Block) (Object) this))) {
+                    return false;
+                }
+
         return true;
     }
 
@@ -479,25 +501,29 @@ public class Block
 
     public float getPlayerRelativeBlockHardness(EntityPlayer playerIn, World worldIn, BlockPos pos)
     {
-        float f_orig = this.getBlockHardness(worldIn, pos);
-        float f = f_orig < 0.0F ? 0.0F : (!playerIn.canHarvestBlock(this) ? playerIn.getToolDigEfficiency(this) / f_orig / 100.0F : playerIn.getToolDigEfficiency(this) / f_orig / 30.0F);
+        float f = this.getBlockHardness(worldIn, pos);
+        float f0 = (f < 0.0F ? 0.0F : (!playerIn.canHarvestBlock(this) ? playerIn.getToolDigEfficiency(this) / f / 100.0F : playerIn.getToolDigEfficiency(this) / f / 30.0F));
 
+        // NoSlowBreak
         final NoSlowBreak noSlowBreak = NoSlowBreak.INSTANCE;
         if (noSlowBreak.handleEvents()) {
             if (noSlowBreak.getWater() && playerIn.isInsideOfMaterial(Material.water) && !EnchantmentHelper.getAquaAffinityModifier(playerIn)) {
-                f *= 5f;
+                f0 *= 5f;
             }
+
             if (noSlowBreak.getAir() && !playerIn.onGround) {
-                f *= 5f;
+                f0 *= 5f;
             }
-        } else if (playerIn.onGround) {
+        } else if (playerIn.onGround) { // NoGround
             final NoFall noFall = NoFall.INSTANCE;
             final Criticals criticals = Criticals.INSTANCE;
+
             if (noFall.handleEvents() && noFall.getMode().equals("NoGround") || criticals.handleEvents() && criticals.getMode().equals("NoGround")) {
-                f /= 5F;
+                f0 /= 5F;
             }
         }
-        return f;
+
+        return f0;
     }
 
     public final void dropBlockAsItem(World worldIn, BlockPos pos, IBlockState state, int forture)
@@ -911,8 +937,9 @@ public class Block
     public float getAmbientOcclusionLightValue()
     {
         if (XRay.INSTANCE.handleEvents()) {
-            return 1.0F;
-        }
+                    return 1F;
+                }
+
         return this.isBlockNormalCube() ? 0.2F : 1.0F;
     }
 
@@ -1199,7 +1226,6 @@ public class Block
         registerBlock(153, "quartz_ore", (new BlockOre(MapColor.netherrackColor)).setHardness(3.0F).setResistance(5.0F).setStepSound(soundTypePiston).setUnlocalizedName("netherquartz"));
         registerBlock(154, "hopper", (new BlockHopper()).setHardness(3.0F).setResistance(8.0F).setStepSound(soundTypeMetal).setUnlocalizedName("hopper"));
         Block block11 = (new BlockQuartz()).setStepSound(soundTypePiston).setHardness(0.8F).setUnlocalizedName("quartzBlock");
-        registerBlock(155, "quartz_block", block11);
         registerBlock(155, "quartz_block", block11);
         registerBlock(156, "quartz_stairs", (new BlockStairs(block11.getDefaultState().withProperty(BlockQuartz.VARIANT, BlockQuartz.EnumType.DEFAULT))).setUnlocalizedName("stairsQuartz"));
         registerBlock(157, "activator_rail", (new BlockRailPowered()).setHardness(0.7F).setStepSound(soundTypeMetal).setUnlocalizedName("activatorRail"));

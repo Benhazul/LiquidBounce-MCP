@@ -1,7 +1,5 @@
 package net.minecraft.client.gui;
 
-import net.ccbluex.liquidbounce.event.EventManager;
-import net.ccbluex.liquidbounce.event.Render2DEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.spectator.ISpectatorMenuObject;
 import net.minecraft.client.gui.spectator.ISpectatorMenuRecipient;
@@ -12,9 +10,12 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.Render2DEvent;
 
 public class GuiSpectator extends Gui implements ISpectatorMenuRecipient
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiSpectator.java
     private static final ResourceLocation field_175267_f = new ResourceLocation("textures/gui/widgets.png");
     public static final ResourceLocation field_175269_a = new ResourceLocation("textures/gui/spectator_widgets.png");
     private final Minecraft field_175268_g;
@@ -67,8 +68,9 @@ public class GuiSpectator extends Gui implements ISpectatorMenuRecipient
                 this.zLevel = f1;
             }
         }
+    
         EventManager.INSTANCE.call(new Render2DEvent(p_175264_2_));
-    }
+}
 
     protected void func_175258_a(ScaledResolution p_175258_1_, float p_175258_2_, int p_175258_3_, float p_175258_4_, SpectatorDetails p_175258_5_)
     {

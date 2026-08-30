@@ -813,7 +813,8 @@ public class GuiCustomizeWorldScreen extends GuiScreen implements GuiSlider.Form
         this.func_175329_a(true);
     }
 
-    private void func_175331_h() throws IOException {
+    private void func_175331_h() throws IOException
+    {
         switch (this.field_175339_B)
         {
             case 300:

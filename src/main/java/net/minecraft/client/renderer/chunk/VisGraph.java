@@ -5,14 +5,14 @@ import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.Queue;
 import java.util.Set;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.IntegerCache;
+import net.ccbluex.liquidbounce.features.module.modules.render.XRay;
 
 public class VisGraph
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinVisGraph.java
     private static final int field_178616_a = (int)Math.pow(16.0D, 0.0D);
     private static final int field_178614_b = (int)Math.pow(16.0D, 1.0D);
     private static final int field_178615_c = (int)Math.pow(16.0D, 2.0D);
@@ -20,10 +20,11 @@ public class VisGraph
     private static final int[] field_178613_e = new int[1352];
     private int field_178611_f = 4096;
 
-    public void func_178606_a(BlockPos pos) {
+    public void func_178606_a(BlockPos pos)
+    {
         if (XRay.INSTANCE.handleEvents()) {
-            return;
-        }
+                    return;
+                }
 
         this.field_178612_d.set(getIndex(pos), true);
         --this.field_178611_f;

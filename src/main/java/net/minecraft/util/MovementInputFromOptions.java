@@ -8,6 +8,7 @@ import net.ccbluex.liquidbounce.features.module.modules.world.scaffolds.Scaffold
 
 public class MovementInputFromOptions extends MovementInput
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/client/MixinMovementInputFromOptions.java
     private final GameSettings gameSettings;
 
     public MovementInputFromOptions(GameSettings gameSettingsIn)
@@ -40,28 +41,23 @@ public class MovementInputFromOptions extends MovementInput
             --this.moveStrafe;
         }
 
-        SuperKnockback superKnockback = SuperKnockback.INSTANCE;
-
-        if (superKnockback.shouldBlockInput())
-        {
-            if (superKnockback.getOnlyMove())
-            {
-                this.moveForward = 0f;
-
-                if (!superKnockback.getOnlyMoveForward())
-                {
-                    this.moveStrafe = 0f;
+        SuperKnockback module = SuperKnockback.INSTANCE;
+        
+                if (module.shouldBlockInput()) {
+                    if (module.getOnlyMove()) {
+                        this.moveForward = 0f;
+        
+                        if (!module.getOnlyMoveForward()) {
+                            this.moveStrafe = 0f;
+                        }
+                    }
                 }
-            }
-        }
-
-        Scaffold.INSTANCE.handleMovementOptions(this);
-
+        
+                Scaffold.INSTANCE.handleMovementOptions(((MovementInput) (Object) this));
         this.jump = this.gameSettings.keyBindJump.isKeyDown();
         this.sneak = this.gameSettings.keyBindSneak.isKeyDown();
 
-        EventManager.INSTANCE.call(new MovementInputEvent(this));
-
+        EventManager.INSTANCE.call(new MovementInputEvent((MovementInput) (Object) this));
         if (this.sneak)
         {
             this.moveStrafe = (float)((double)this.moveStrafe * 0.3D);

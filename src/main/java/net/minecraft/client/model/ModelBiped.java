@@ -1,14 +1,15 @@
 package net.minecraft.client.model;
 
-import net.ccbluex.liquidbounce.features.module.modules.render.Rotations;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
+import net.ccbluex.liquidbounce.features.module.modules.render.Rotations;
+import net.minecraft.entity.player.EntityPlayer;
+import static net.ccbluex.liquidbounce.utils.client.MinecraftInstance.mc;
 
 public class ModelBiped extends ModelBase
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/render/MixinModelBiped.java
     public ModelRenderer bipedHead;
     public ModelRenderer bipedHeadwear;
     public ModelRenderer bipedBody;
@@ -149,21 +150,11 @@ public class ModelBiped extends ModelBase
         }
 
         this.bipedLeftArm.rotateAngleY = 0.0F;
-        if (this.heldItemRight == 3) {
-            this.bipedRightArm.rotateAngleY = 0.0F;
-        }
 
-        if (Rotations.INSTANCE.shouldRotate()
-                && entityIn instanceof EntityPlayer
-                && entityIn == Minecraft.getMinecraft().thePlayer) {
+        if (heldItemRight == 3) bipedRightArm.rotateAngleY = 0F;
 
-            float pitch = Rotations.INSTANCE.lerp(
-                    Minecraft.getMinecraft().timer.renderPartialTicks,
-                    Rotations.INSTANCE.getPrevHeadPitch(),
-                    Rotations.INSTANCE.getHeadPitch()
-            );
-
-            this.bipedHead.rotateAngleX = (float) Math.toRadians(pitch);
+        if (Rotations.INSTANCE.shouldRotate() && entityIn instanceof EntityPlayer && entityIn.equals(mc.thePlayer)) {
+            bipedHead.rotateAngleX = (float) Math.toRadians(Rotations.INSTANCE.lerp(mc.timer.renderPartialTicks, Rotations.INSTANCE.getPrevHeadPitch(), Rotations.INSTANCE.getHeadPitch()));
         }
 
         if (this.swingProgress > -9990.0F)

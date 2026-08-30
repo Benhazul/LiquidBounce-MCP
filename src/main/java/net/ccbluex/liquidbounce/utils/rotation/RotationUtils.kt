@@ -533,22 +533,10 @@ object RotationUtils : MinecraftInstance, Listenable {
         entity.hitBox.center.withY(entity.hitBox.maxY), entity.hitBox.center.withY(entity.hitBox.minY)
     ).any { isVisible(it) }
 
-    fun isEntityHeightVisible(entity: TileEntity): Boolean {
-        val pos = entity.pos
-        val x = pos.x.toDouble()
-        val y = pos.y.toDouble()
-        val z = pos.z.toDouble()
-
-        val minY = y
-        val maxY = y + 1.0
-        val centerX = x + 0.5
-        val centerZ = z + 0.5
-
-        val top = Vec3(centerX, maxY, centerZ)
-        val bottom = Vec3(centerX, minY, centerZ)
-
-        return isVisible(top) || isVisible(bottom)
-    }
+    fun isEntityHeightVisible(entity: TileEntity) = arrayOf(
+        entity.renderBoundingBox.center.withY(entity.renderBoundingBox.maxY),
+        entity.renderBoundingBox.center.withY(entity.renderBoundingBox.minY)
+    ).any { isVisible(it) }
 
     /**
      * Set your target rotation

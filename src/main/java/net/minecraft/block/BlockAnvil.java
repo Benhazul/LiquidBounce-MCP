@@ -27,6 +27,7 @@ import net.minecraft.world.World;
 
 public class BlockAnvil extends BlockFalling
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockAnvil.java
     public static final PropertyDirection FACING = PropertyDirection.create("facing", EnumFacing.Plane.HORIZONTAL);
     public static final PropertyInteger DAMAGE = PropertyInteger.create("damage", 0, 2);
 
@@ -50,9 +51,8 @@ public class BlockAnvil extends BlockFalling
 
     public IBlockState onBlockPlaced(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer)
     {
-        if (((meta >> 2) & ~0x3) != 0)
-        {
-            return super.onBlockPlaced(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer).withProperty(FACING, placer.getHorizontalFacing().rotateY()).withProperty(DAMAGE, Integer.valueOf(2));
+        if (((meta >> 2) & ~0x3) != 0) {
+            return super.onBlockPlaced(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer).withProperty(BlockAnvil.FACING, placer.getHorizontalFacing().rotateY()).withProperty(BlockAnvil.DAMAGE, 2);
         }
 
         EnumFacing enumfacing = placer.getHorizontalFacing().rotateY();

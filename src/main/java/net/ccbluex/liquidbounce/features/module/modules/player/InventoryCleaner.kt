@@ -943,15 +943,10 @@ object InventoryCleaner : Module("InventoryCleaner", Category.PLAYER) {
     }
 
     // Check if stack is repairable and either has no enchantments or just unbreaking.
-    private fun shouldBeRepaired(stack: ItemStack?): Boolean =
-        stack != null &&
-                !stack.isEmpty() &&
-                stack.isItemStackDamageable &&
-                (
-                        !stack.isItemEnchanted ||
-                                (stack.enchantmentCount == 1 &&
-                                        Enchantment.unbreaking in stack.enchantments)
-                        )
+    private fun shouldBeRepaired(stack: ItemStack?) =
+        !stack.isEmpty() && stack.item.isRepairable && (
+                !stack.isItemEnchanted || (stack.enchantmentCount == 1 && Enchantment.unbreaking in stack.enchantments)
+                )
 
     fun canBeRepairedWithOther(stack: ItemStack?, stacks: List<ItemStack?>): Boolean {
         if (!handleEvents() || !repairEquipment)

@@ -17,6 +17,7 @@ import net.ccbluex.liquidbounce.features.module.modules.movement.FastClimb;
 
 public class BlockLadder extends Block
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/block/MixinBlockLadder.java
     public static final PropertyDirection FACING = PropertyDirection.create("facing", EnumFacing.Plane.HORIZONTAL);
 
     protected BlockLadder()
@@ -44,13 +45,7 @@ public class BlockLadder extends Block
 
         if (iblockstate.getBlock() == this)
         {
-            float f = 0.125F;
-            FastClimb fastClimb = FastClimb.INSTANCE;
-
-            if (fastClimb.handleEvents() && fastClimb.getMode().equals("AAC3.0.0"))
-            {
-                f = 0.99f;
-            }
+            float f = injectAACWallClimb(0.125F);
 
             switch ((EnumFacing)iblockstate.getValue(FACING))
             {
@@ -151,5 +146,12 @@ public class BlockLadder extends Block
     protected BlockState createBlockState()
     {
         return new BlockState(this, new IProperty[] {FACING});
+    }
+
+
+    private float injectAACWallClimb(float constant) {
+        FastClimb fastClimb = FastClimb.INSTANCE;
+
+        return fastClimb.handleEvents() && fastClimb.getMode().equals("AAC3.0.0") ? 0.99f : constant;
     }
 }

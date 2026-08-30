@@ -52,7 +52,8 @@ public class GuiControls extends GuiScreen
         this.keyBindingList.handleMouseInput();
     }
 
-    protected void actionPerformed(GuiButton button) throws IOException {
+    protected void actionPerformed(GuiButton button) throws IOException
+    {
         if (button.id == 200)
         {
             this.mc.displayGuiScreen(this.parentScreen);

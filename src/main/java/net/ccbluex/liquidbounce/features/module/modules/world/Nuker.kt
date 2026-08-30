@@ -138,7 +138,7 @@ object Nuker : Module("Nuker", Category.WORLD, gameDetecting = false) {
                 }
 
                 "LightOpacity" -> validBlocks.entries.sortedByDescending { (pos, block) ->
-                    val opacity = block.getLightOpacity(/*world, pos*/).toDouble()
+                    val opacity = block.getLightOpacity(world, pos).toDouble()
                     if (pos.x == safePos.x && safePos.y <= pos.y && pos.z == safePos.z) Double.MIN_VALUE + opacity // Last block
                     else opacity
                 }

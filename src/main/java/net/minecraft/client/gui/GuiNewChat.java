@@ -3,9 +3,6 @@ package net.minecraft.client.gui;
 import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
-
-import net.ccbluex.liquidbounce.features.module.modules.render.HUD;
-import net.ccbluex.liquidbounce.ui.font.Fonts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -14,9 +11,12 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.ccbluex.liquidbounce.features.module.modules.render.HUD;
+import net.ccbluex.liquidbounce.ui.font.Fonts;
 
 public class GuiNewChat extends Gui
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiNewChat.java
     private static final Logger logger = LogManager.getLogger();
     private final Minecraft mc;
     private final List<String> sentMessages = Lists.<String>newArrayList();
@@ -85,21 +85,7 @@ public class GuiNewChat extends Gui
                                 drawRect(i2, j2 - 9, i2 + l + 4, j2, l1 / 2 << 24);
                                 String s = chatline.getChatComponent().getFormattedText();
                                 GlStateManager.enableBlend();
-                                if (HUD.INSTANCE.shouldModifyChatFont()) {
-                                    Fonts.fontSemibold40.drawStringWithShadow(
-                                            s,
-                                            (float)i2,
-                                            (float)(j2 - 8),
-                                            16777215 + (l1 << 24)
-                                    );
-                                } else {
-                                    this.mc.fontRendererObj.drawStringWithShadow(
-                                            s,
-                                            (float)i2,
-                                            (float)(j2 - 8),
-                                            16777215 + (l1 << 24)
-                                    );
-                                }
+                                injectFontChatB(this.mc.fontRendererObj, s, (float)i2, (float)(j2 - 8), 16777215 + (l1 << 24));
                                 GlStateManager.disableAlpha();
                                 GlStateManager.disableBlend();
                             }
@@ -109,9 +95,7 @@ public class GuiNewChat extends Gui
 
                 if (flag)
                 {
-                    int k2 = HUD.INSTANCE.shouldModifyChatFont()
-                            ? Fonts.fontSemibold40.getHeight()
-                            : this.mc.fontRendererObj.FONT_HEIGHT;
+                    int k2 = this.mc.fontRendererObj.FONT_HEIGHT;
                     GlStateManager.translate(-3.0F, 0.0F, 0.0F);
                     int l2 = k * k2 + k;
                     int i3 = j * k2 + j;
@@ -256,11 +240,7 @@ public class GuiNewChat extends Gui
             {
                 int l = Math.min(this.getLineCount(), this.drawnChatLines.size());
 
-                int fontHeight = HUD.INSTANCE.shouldModifyChatFont()
-                        ? Fonts.fontSemibold40.getHeight()
-                        : this.mc.fontRendererObj.FONT_HEIGHT;
-
-                if (j <= MathHelper.floor_float((float)this.getChatWidth() / this.getChatScale()) && k < fontHeight * l + l)
+                if (j <= MathHelper.floor_float((float)this.getChatWidth() / this.getChatScale()) && k < this.mc.fontRendererObj.FONT_HEIGHT * l + l)
                 {
                     int i1 = k / this.mc.fontRendererObj.FONT_HEIGHT + this.scrollPos;
 
@@ -273,14 +253,7 @@ public class GuiNewChat extends Gui
                         {
                             if (ichatcomponent instanceof ChatComponentText)
                             {
-                                String text = GuiUtilRenderComponents.func_178909_a(
-                                        ((ChatComponentText)ichatcomponent).getChatComponentText_TextValue(),
-                                        false
-                                );
-
-                                j1 += HUD.INSTANCE.shouldModifyChatFont()
-                                        ? Fonts.fontSemibold40.getStringWidth(text)
-                                        : this.mc.fontRendererObj.getStringWidth(text);
+                                j1 += injectFontChatC(this.mc.fontRendererObj, GuiUtilRenderComponents.func_178909_a(((ChatComponentText)ichatcomponent).getChatComponentText_TextValue(), false));
 
                                 if (j1 > j)
                                 {
@@ -369,5 +342,15 @@ public class GuiNewChat extends Gui
     public int getLineCount()
     {
         return this.getChatHeight() / 9;
+    }
+
+
+    private int injectFontChatB(FontRenderer instance, String text, float x, float y, int color) {
+        return HUD.INSTANCE.shouldModifyChatFont() ? Fonts.fontSemibold40.drawStringWithShadow(text, x, y, color) : instance.drawStringWithShadow(text, x, y, color);
+    }
+
+
+    private int injectFontChatC(FontRenderer instance, String text) {
+        return HUD.INSTANCE.shouldModifyChatFont() ? Fonts.fontSemibold40.getStringWidth(text) : instance.getStringWidth(text);
     }
 }

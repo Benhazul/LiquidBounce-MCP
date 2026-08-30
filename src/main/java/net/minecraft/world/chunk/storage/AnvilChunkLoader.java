@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/tweaks/MixinAnvilChunkLoader.java
     private static final Logger logger = LogManager.getLogger();
     private Map<ChunkCoordIntPair, NBTTagCompound> chunksToRemove = new ConcurrentHashMap();
     private Set<ChunkCoordIntPair> pendingAnvilChunksCoordinates = Collections.<ChunkCoordIntPair>newSetFromMap(new ConcurrentHashMap());
@@ -56,10 +57,7 @@ public class AnvilChunkLoader implements IChunkLoader, IThreadedFileIO
                 return null;
             }
 
-            try (DataInputStream stream = datainputstream)
-            {
-                nbttagcompound = CompressedStreamTools.read(stream);
-            }
+            nbttagcompound = CompressedStreamTools.read(datainputstream);
         }
 
         return this.checkedReadChunkFromNBT(worldIn, x, z, nbttagcompound);

@@ -1,6 +1,5 @@
 package net.minecraft.client.gui.achievement;
 
-import net.ccbluex.liquidbounce.features.module.modules.render.AntiBlind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
@@ -10,9 +9,11 @@ import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.stats.Achievement;
 import net.minecraft.util.ResourceLocation;
+import net.ccbluex.liquidbounce.features.module.modules.render.AntiBlind;
 
 public class GuiAchievement extends Gui
 {
+    // Mixin Porter applied: net/ccbluex/liquidbounce/injection/forge/mixins/gui/MixinGuiAchievement.java
     private static final ResourceLocation achievementBg = new ResourceLocation("textures/gui/achievement/achievement_background.png");
     private Minecraft mc;
     private int width;
@@ -33,8 +34,9 @@ public class GuiAchievement extends Gui
     public void displayAchievement(Achievement ach)
     {
         if (AntiBlind.INSTANCE.handleEvents() && AntiBlind.INSTANCE.getAchievements()) {
-            return;
-        }
+                    // Cancel Achievement Display Packet
+                    return;
+                }
 
         this.achievementTitle = I18n.format("achievement.get", new Object[0]);
         this.achievementDescription = ach.getStatName().getUnformattedText();
@@ -76,8 +78,9 @@ public class GuiAchievement extends Gui
     public void updateAchievementWindow()
     {
         if (AntiBlind.INSTANCE.handleEvents() && AntiBlind.INSTANCE.getAchievements()) {
-            return;
-        }
+                    // Cancel Achievement Window Packet
+                    return;
+                }
 
         if (this.theAchievement != null && this.notificationTime != 0L && Minecraft.getMinecraft().thePlayer != null)
         {

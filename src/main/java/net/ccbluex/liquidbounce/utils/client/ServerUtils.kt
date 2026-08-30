@@ -46,7 +46,7 @@ object ServerUtils : MinecraftInstance {
                 networkManager.netHandler = NetHandlerLoginClient(networkManager, mc, GuiMainMenu())
 
                 networkManager.sendPacket(
-                    C00Handshake(47, serverAddress.ip, serverAddress.port, EnumConnectionState.LOGIN)
+                    C00Handshake(47, serverAddress.ip, serverAddress.port, EnumConnectionState.LOGIN, true)
                 )
 
                 networkManager.sendPacket(
